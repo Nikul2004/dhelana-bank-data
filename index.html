@@ -549,28 +549,23 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 <script>
 // ============================================================
 // GITHUB DATA STORE CONFIG
-// ============================================================
-// These are the DEFAULT values baked into this file.
-// Any device that opens this HTML will use these automatically.
-// You can still override them from the GitHub Config page in admin panel.
+// owner & repo are pre-filled. Token must be set once per device
+// OR use "Download HTML with Token" to bake it in permanently.
 // ============================================================
 const GITHUB_CONFIG = {
-  token:  '',         // ← PASTE YOUR TOKEN HERE (ghp_xxxx...)
-  owner:  'nikul2004', // ← Your GitHub username
-  repo:   'dhelana-bank-data', // ← Your repo name
+  token:  '',               // SET THIS ONCE — see setup overlay on first open
+  owner:  'nikul2004',      // Your GitHub username — already set
+  repo:   'dhelana-bank-data', // Your repo — already set
   path:   'bank-data.json',
   branch: 'main'
 };
 
-// Merge any locally saved overrides on top of the hardcoded defaults.
-// This means: hardcoded values work on ALL devices out of the box,
-// but if someone updates via GitHub Config page it still works.
+// Load token from localStorage (saved on this device previously)
 (()=>{
   try {
     const saved = localStorage.getItem('dhelana_github_config');
     if(saved){
       const c = JSON.parse(saved);
-      // Only override non-empty saved values
       if(c.token)  GITHUB_CONFIG.token  = c.token;
       if(c.owner)  GITHUB_CONFIG.owner  = c.owner;
       if(c.repo)   GITHUB_CONFIG.repo   = c.repo;
@@ -615,7 +610,7 @@ let activePage = 'overview';
 })();
 
 // ============================================================
-// LOADER
+// LOADER + FIRST-TIME TOKEN SETUP
 // ============================================================
 window.addEventListener('load', async ()=>{
   await loadDB();
@@ -623,27 +618,168 @@ window.addEventListener('load', async ()=>{
     const loader = document.getElementById('loader');
     loader.style.opacity = '0';
     setTimeout(()=>{
-      loader.style.display='none';
-      // Show GitHub connection status on login page
-      const el = document.getElementById('gh-login-status');
-      if(el){
-        if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
-          el.style.display='block';
-          el.style.background='rgba(46,204,113,0.1)';
-          el.style.border='1px solid rgba(46,204,113,0.2)';
-          el.style.color='#2ECC71';
-          el.textContent = `🐙 GitHub Connected: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`;
-        } else {
-          el.style.display='block';
-          el.style.background='rgba(231,76,60,0.08)';
-          el.style.border='1px solid rgba(231,76,60,0.15)';
-          el.style.color='#E74C3C';
-          el.textContent = '⚠️ GitHub not configured — data saves locally only';
-        }
+      loader.style.display = 'none';
+
+      // Update login status badge
+      updateGhLoginBadge();
+
+      // If no token on this device, show the setup overlay
+      if(!GITHUB_CONFIG.token){
+        showTokenSetupOverlay();
       }
     }, 800);
   }, 2200);
 });
+
+function updateGhLoginBadge(){
+  const el = document.getElementById('gh-login-status');
+  if(!el) return;
+  if(GITHUB_CONFIG.token){
+    el.style.display  = 'block';
+    el.style.background = 'rgba(46,204,113,0.1)';
+    el.style.border   = '1px solid rgba(46,204,113,0.2)';
+    el.style.color    = '#2ECC71';
+    el.innerHTML      = `🐙 GitHub Connected: <strong>${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}</strong>`;
+  } else {
+    el.style.display  = 'block';
+    el.style.background = 'rgba(241,196,15,0.08)';
+    el.style.border   = '1px solid rgba(241,196,15,0.2)';
+    el.style.color    = '#F1C40F';
+    el.innerHTML      = `⚠️ GitHub token missing on this device — <a href="#" onclick="showTokenSetupOverlay()" style="color:#F1C40F;text-decoration:underline">Click to set up →</a>`;
+  }
+}
+
+// ============================================================
+// TOKEN SETUP OVERLAY — shown on new devices
+// ============================================================
+function showTokenSetupOverlay(){
+  let overlay = document.getElementById('token-setup-overlay');
+  if(overlay){ overlay.style.display='flex'; return; }
+
+  overlay = document.createElement('div');
+  overlay.id = 'token-setup-overlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(11,26,46,0.97);z-index:99998;
+    display:flex;align-items:center;justify-content:center;padding:16px;
+    animation:fadeIn 0.3s ease;
+  `;
+  overlay.innerHTML = `
+    <div style="
+      background:linear-gradient(135deg,#122340,#1A3254);
+      border:1px solid rgba(201,168,76,0.4);border-radius:20px;
+      padding:36px;width:100%;max-width:480px;
+      box-shadow:0 30px 80px rgba(0,0,0,0.6);
+      animation:modalSlide 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    ">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:48px;margin-bottom:12px">🔑</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;background:linear-gradient(135deg,#C9A84C,#E8C97A);-webkit-background-clip:text;-webkit-text-fill-color:transparent">GitHub Token Required</div>
+        <div style="color:#8A9BB0;font-size:13px;margin-top:8px;line-height:1.6">
+          This is a <strong style="color:#F5F0E8">new device</strong>. Paste your GitHub token once<br>to connect to the bank database.
+        </div>
+      </div>
+
+      <div style="background:rgba(52,152,219,0.08);border:1px solid rgba(52,152,219,0.2);border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:#8A9BB0;line-height:1.8">
+        <strong style="color:#3498DB">📋 Where to get your token:</strong><br>
+        GitHub.com → Profile → Settings → Developer settings →<br>
+        Personal access tokens → Tokens (classic) → Copy your token
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:#C9A84C;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:8px">GitHub Personal Access Token</label>
+        <input
+          type="password" id="setup-token-input"
+          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          style="width:100%;padding:14px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.3);border-radius:10px;color:#F5F0E8;font-family:monospace;font-size:14px;outline:none;transition:border 0.2s"
+          onfocus="this.style.borderColor='#C9A84C'"
+          onblur="this.style.borderColor='rgba(201,168,76,0.3)'"
+          onkeydown="if(event.key==='Enter')connectWithToken()"
+        />
+      </div>
+      <div id="setup-token-info" style="font-size:12px;color:#8A9BB0;margin-bottom:4px">
+        Repo: <strong style="color:#F5F0E8">nikul2004/dhelana-bank-data</strong> (pre-configured)
+      </div>
+      <div id="setup-status" style="font-size:13px;min-height:20px;margin-bottom:16px"></div>
+
+      <button onclick="connectWithToken()" style="
+        width:100%;padding:15px;background:linear-gradient(135deg,#9A7A2E,#E8C97A);
+        border:none;border-radius:10px;color:#0B1A2E;font-family:'DM Sans',sans-serif;
+        font-size:15px;font-weight:700;cursor:pointer;transition:transform 0.2s;margin-bottom:10px;
+      " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+        🔗 Connect to GitHub
+      </button>
+      <button onclick="skipTokenSetup()" style="
+        width:100%;padding:11px;background:transparent;border:1px solid rgba(255,255,255,0.1);
+        border-radius:10px;color:#8A9BB0;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;
+      ">
+        Skip — use local storage only (data won't sync)
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function connectWithToken(){
+  const input = document.getElementById('setup-token-input');
+  const status = document.getElementById('setup-status');
+  const token = input ? input.value.trim() : '';
+
+  if(!token){
+    if(status) status.innerHTML = '<span style="color:#E74C3C">⚠️ Please paste your token first</span>';
+    return;
+  }
+  if(!token.startsWith('ghp_') && !token.startsWith('github_pat_')){
+    if(status) status.innerHTML = '<span style="color:#E74C3C">⚠️ Token should start with ghp_ — check you copied it correctly</span>';
+    return;
+  }
+
+  if(status) status.innerHTML = '<span style="color:#C9A84C">⏳ Verifying token with GitHub...</span>';
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`,
+      { headers:{ 'Authorization':`token ${token}` } }
+    );
+
+    if(res.ok){
+      // Token works — save it
+      GITHUB_CONFIG.token = token;
+      localStorage.setItem('dhelana_github_config', JSON.stringify({
+        token, owner:GITHUB_CONFIG.owner, repo:GITHUB_CONFIG.repo,
+        branch:GITHUB_CONFIG.branch, path:GITHUB_CONFIG.path
+      }));
+
+      if(status) status.innerHTML = '<span style="color:#2ECC71">✅ Connected! Loading data from GitHub...</span>';
+
+      // Reload DB from GitHub now that we have token
+      DB._sha = null;
+      await loadDB();
+      updateGhLoginBadge();
+
+      setTimeout(()=>{
+        const overlay = document.getElementById('token-setup-overlay');
+        if(overlay){ overlay.style.opacity='0'; overlay.style.transition='opacity 0.4s'; setTimeout(()=>overlay.remove(), 400); }
+        toast('✅ GitHub connected! Data loaded successfully.', 'success', 5000);
+      }, 1200);
+
+    } else if(res.status === 401){
+      if(status) status.innerHTML = '<span style="color:#E74C3C">❌ Token is invalid or expired. Generate a new one on GitHub.</span>';
+    } else if(res.status === 404){
+      if(status) status.innerHTML = `<span style="color:#E74C3C">❌ Repo "dhelana-bank-data" not found under nikul2004. Check repo name.</span>`;
+    } else {
+      if(status) status.innerHTML = `<span style="color:#E74C3C">❌ GitHub error ${res.status}. Try again.</span>`;
+    }
+  } catch(e){
+    if(status) status.innerHTML = '<span style="color:#E74C3C">❌ Cannot reach GitHub. Check your internet connection.</span>';
+  }
+}
+
+function skipTokenSetup(){
+  const overlay = document.getElementById('token-setup-overlay');
+  if(overlay){ overlay.style.opacity='0'; overlay.style.transition='opacity 0.3s'; setTimeout(()=>overlay.remove(), 300); }
+  toast('ℹ️ Running in local mode — data will not sync across devices', 'info', 5000);
+  updateGhLoginBadge();
+}
 
 // ============================================================
 // DATA LAYER - GitHub + localStorage fallback
