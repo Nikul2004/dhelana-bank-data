@@ -550,21 +550,32 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 // ============================================================
 // GITHUB DATA STORE CONFIG
 // ============================================================
+// These are the DEFAULT values baked into this file.
+// Any device that opens this HTML will use these automatically.
+// You can still override them from the GitHub Config page in admin panel.
+// ============================================================
 const GITHUB_CONFIG = {
-  token: '',
-  owner: '',
-  repo: '',
-  path: 'bank-data.json',
+  token:  '',         // ← PASTE YOUR TOKEN HERE (ghp_xxxx...)
+  owner:  'nikul2004', // ← Your GitHub username
+  repo:   'dhelana-bank-data', // ← Your repo name
+  path:   'bank-data.json',
   branch: 'main'
 };
 
-// Load saved GitHub config IMMEDIATELY before anything else runs
+// Merge any locally saved overrides on top of the hardcoded defaults.
+// This means: hardcoded values work on ALL devices out of the box,
+// but if someone updates via GitHub Config page it still works.
 (()=>{
   try {
     const saved = localStorage.getItem('dhelana_github_config');
     if(saved){
       const c = JSON.parse(saved);
-      Object.assign(GITHUB_CONFIG, c);
+      // Only override non-empty saved values
+      if(c.token)  GITHUB_CONFIG.token  = c.token;
+      if(c.owner)  GITHUB_CONFIG.owner  = c.owner;
+      if(c.repo)   GITHUB_CONFIG.repo   = c.repo;
+      if(c.path)   GITHUB_CONFIG.path   = c.path;
+      if(c.branch) GITHUB_CONFIG.branch = c.branch;
     }
   } catch(e){}
 })();
@@ -1951,81 +1962,251 @@ function saveAdminProfile(){
 // GITHUB CONFIG PAGE
 // ============================================================
 function renderGithubConfig(){
+  const isConnected = !!(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo);
+  const tokenMasked = GITHUB_CONFIG.token ? GITHUB_CONFIG.token.substring(0,8)+'••••••••••••' : '';
   return `
-  <div class="page-header"><div class="page-title">GitHub Data Storage</div><div class="page-subtitle">Configure GitHub to persist data across devices</div></div>
+  <div class="page-header">
+    <div class="page-title">GitHub Database Config</div>
+    <div class="page-subtitle">One-time setup — works on ALL devices automatically</div>
+  </div>
+
+  <!-- CONNECTION STATUS CARD -->
+  <div class="data-card" style="margin-bottom:20px">
+    <div class="data-card-header"><div class="data-card-title">🔌 Current Connection Status</div></div>
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;background:${isConnected?'rgba(46,204,113,0.08)':'rgba(231,76,60,0.08)'};border:1px solid ${isConnected?'rgba(46,204,113,0.25)':'rgba(231,76,60,0.25)'}">
+        <div style="font-size:36px">${isConnected?'✅':'❌'}</div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:${isConnected?'var(--green)':'var(--red)'}">${isConnected?'Connected to GitHub':'Not Connected'}</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">
+            ${isConnected
+              ? `Repo: <strong style="color:var(--cream)">${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}</strong> &nbsp;|&nbsp; Token: <code style="color:var(--gold)">${tokenMasked}</code>`
+              : 'Token not set in this file. Follow the steps below to fix.'}
+          </div>
+        </div>
+        ${isConnected ? `<button class="btn-sm btn-info" style="margin-left:auto" onclick="verifyGithubLive()">🔄 Re-verify</button>` : ''}
+      </div>
+      <div id="gh-verify-result" style="margin-top:12px;font-size:13px"></div>
+    </div>
+  </div>
+
+  <!-- WHY OTHER DEVICES SHOW EMPTY -->
+  <div class="data-card" style="margin-bottom:20px;border-color:rgba(241,196,15,0.3)">
+    <div class="data-card-header"><div class="data-card-title">⚠️ Why Other Devices Show Empty Data</div></div>
+    <div style="padding:20px;font-size:13px;line-height:2;color:var(--cream)">
+      <strong style="color:var(--gold)">The Problem:</strong> The GitHub token is saved in <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">localStorage</code> — which is <strong>tied to one browser on one device</strong>. When you open the same HTML file on a different phone or laptop, localStorage is empty, so GitHub is not connected and it shows <code>{}</code>.<br><br>
+      <strong style="color:var(--green)">✅ The Fix:</strong> Paste your token directly <strong>inside this HTML file</strong> (one time). Then every device that opens the file will connect to GitHub automatically — no setup needed.
+    </div>
+  </div>
+
+  <!-- STEP BY STEP SETUP -->
+  <div class="data-card" style="margin-bottom:20px">
+    <div class="data-card-header"><div class="data-card-title">📋 One-Time Setup (Do This Once)</div></div>
+    <div style="padding:24px">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="width:32px;height:32px;min-width:32px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:14px">1</div>
+          <div><div style="font-weight:600;color:var(--cream);margin-bottom:4px">Generate your GitHub Token</div><div style="font-size:13px;color:var(--text-muted)">Go to <strong style="color:var(--gold)">github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</strong> → Generate new token → check <strong>repo</strong> scope → Copy the token</div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="width:32px;height:32px;min-width:32px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:14px">2</div>
+          <div><div style="font-weight:600;color:var(--cream);margin-bottom:4px">Paste token below and save config</div><div style="font-size:13px;color:var(--text-muted)">Enter your token in the form below and click <strong style="color:var(--gold)">💾 Save Config</strong></div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="width:32px;height:32px;min-width:32px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:14px">3</div>
+          <div><div style="font-weight:600;color:var(--cream);margin-bottom:4px">Download & re-upload the HTML file</div><div style="font-size:13px;color:var(--text-muted)">Click <strong style="color:var(--gold)">⬇️ Download HTML with Token</strong> — this gives you a new HTML file with the token baked in. Upload this file to GitHub Pages and share it. <strong>Every device that opens this file works instantly.</strong></div></div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="width:32px;height:32px;min-width:32px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:14px">4</div>
+          <div><div style="font-weight:600;color:var(--cream);margin-bottom:4px">Push your data</div><div style="font-size:13px;color:var(--text-muted)">Click <strong style="color:var(--gold)">⬆️ Push All Data to GitHub</strong> to write all current data to your repo</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIG FORM -->
   <div class="data-card">
-    <div class="data-card-header"><div class="data-card-title">Setup Instructions</div></div>
+    <div class="data-card-header"><div class="data-card-title">⚙️ GitHub Configuration</div></div>
     <div style="padding:28px">
-      <div style="background:rgba(52,152,219,0.08);border:1px solid rgba(52,152,219,0.2);border-radius:12px;padding:20px;margin-bottom:24px;font-size:13px;line-height:1.8;color:var(--cream)">
-        <strong style="color:var(--gold)">📋 How to configure GitHub storage:</strong><br>
-        1. Create a GitHub account at <strong>github.com</strong><br>
-        2. Create a new <strong>private repository</strong> (e.g., <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">dhelana-bank-data</code>)<br>
-        3. Go to <strong>Settings → Developer Settings → Personal Access Tokens → Tokens (classic)</strong><br>
-        4. Generate a token with <strong>"repo"</strong> scope checked<br>
-        5. Copy the token and paste it below (it will only be stored in your browser)<br>
-        6. Click <strong>Save & Test</strong>
-      </div>
-      <div class="form-group"><label>GitHub Personal Access Token</label><input type="password" id="gh-token" value="${GITHUB_CONFIG.token}" placeholder="ghp_xxxxxxxxxxxx..." /></div>
-      <div class="form-row">
-        <div class="form-group"><label>GitHub Username (Owner)</label><input id="gh-owner" value="${GITHUB_CONFIG.owner}" placeholder="your-username" /></div>
-        <div class="form-group"><label>Repository Name</label><input id="gh-repo" value="${GITHUB_CONFIG.repo}" placeholder="dhelana-bank-data" /></div>
+      <div class="form-group">
+        <label>GitHub Personal Access Token <span style="color:var(--red)">*</span></label>
+        <input type="password" id="gh-token" value="${GITHUB_CONFIG.token}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-family:monospace" />
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">🔒 Stored in this file's code — never sent anywhere except GitHub API</div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Branch</label><input id="gh-branch" value="${GITHUB_CONFIG.branch||'main'}" placeholder="main" /></div>
-        <div class="form-group"><label>Data File Path</label><input id="gh-path" value="${GITHUB_CONFIG.path}" placeholder="bank-data.json" /></div>
+        <div class="form-group">
+          <label>GitHub Username</label>
+          <input id="gh-owner" value="${GITHUB_CONFIG.owner}" placeholder="nikul2004" />
+        </div>
+        <div class="form-group">
+          <label>Repository Name</label>
+          <input id="gh-repo" value="${GITHUB_CONFIG.repo}" placeholder="dhelana-bank-data" />
+        </div>
       </div>
-      <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn-primary" style="max-width:200px" onclick="saveGithubConfig()">💾 Save & Connect</button>
-        <button class="btn-sm btn-gold" style="padding:14px 20px" onclick="testGithubConnection()">🔗 Test Connection</button>
-        <button class="btn-sm btn-success" style="padding:14px 20px" onclick="pushToGithub()">⬆️ Push Data Now</button>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Branch</label>
+          <input id="gh-branch" value="${GITHUB_CONFIG.branch||'main'}" placeholder="main" />
+        </div>
+        <div class="form-group">
+          <label>Data File Path</label>
+          <input id="gh-path" value="${GITHUB_CONFIG.path}" placeholder="bank-data.json" />
+        </div>
       </div>
-      <div id="gh-status" style="margin-top:16px;font-size:13px"></div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+        <button class="btn-primary" style="max-width:180px" onclick="saveGithubConfig()">💾 Save Config</button>
+        <button class="btn-sm btn-gold" style="padding:14px 18px" onclick="testGithubConnection()">🔗 Test Connection</button>
+        <button class="btn-sm btn-success" style="padding:14px 18px" onclick="pushToGithub()">⬆️ Push All Data</button>
+        <button class="btn-sm btn-info" style="padding:14px 18px" onclick="downloadHtmlWithToken()">⬇️ Download HTML with Token</button>
+      </div>
+      <div id="gh-status" style="margin-top:16px;font-size:13px;line-height:1.6"></div>
     </div>
   </div>
   `;
 }
 
 function saveGithubConfig(){
-  GITHUB_CONFIG.token = document.getElementById('gh-token').value.trim();
-  GITHUB_CONFIG.owner = document.getElementById('gh-owner').value.trim();
-  GITHUB_CONFIG.repo = document.getElementById('gh-repo').value.trim();
-  GITHUB_CONFIG.branch = document.getElementById('gh-branch').value.trim()||'main';
-  GITHUB_CONFIG.path = document.getElementById('gh-path').value.trim()||'bank-data.json';
+  const token  = document.getElementById('gh-token').value.trim();
+  const owner  = document.getElementById('gh-owner').value.trim();
+  const repo   = document.getElementById('gh-repo').value.trim();
+  const branch = document.getElementById('gh-branch').value.trim()||'main';
+  const path   = document.getElementById('gh-path').value.trim()||'bank-data.json';
 
-  // Save to localStorage so it persists across sessions
-  localStorage.setItem('dhelana_github_config', JSON.stringify({
-    token: GITHUB_CONFIG.token,
-    owner: GITHUB_CONFIG.owner,
-    repo: GITHUB_CONFIG.repo,
-    branch: GITHUB_CONFIG.branch,
-    path: GITHUB_CONFIG.path
-  }));
-  toast('✅ GitHub config saved! Now click Push Data Now.', 'success');
+  if(!token){ toast('⚠️ Token is required', 'warning'); return; }
+  if(!owner){ toast('⚠️ GitHub username is required', 'warning'); return; }
+  if(!repo) { toast('⚠️ Repository name is required', 'warning'); return; }
+
+  GITHUB_CONFIG.token  = token;
+  GITHUB_CONFIG.owner  = owner;
+  GITHUB_CONFIG.repo   = repo;
+  GITHUB_CONFIG.branch = branch;
+  GITHUB_CONFIG.path   = path;
+
+  // Also save to localStorage as session backup
+  localStorage.setItem('dhelana_github_config', JSON.stringify({ token, owner, repo, branch, path }));
+  toast('✅ Config saved in memory. Now click ⬇️ Download HTML with Token to make it permanent across all devices.', 'success', 6000);
+}
+
+async function verifyGithubLive(){
+  const el = document.getElementById('gh-verify-result');
+  if(!el) return;
+  if(!GITHUB_CONFIG.token){ el.innerHTML='<span style="color:var(--red)">❌ No token set</span>'; return; }
+  el.innerHTML = '<span style="color:var(--gold)">⏳ Checking...</span>';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`,
+      { headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}` } });
+    if(res.ok){
+      const data = await res.json();
+      el.innerHTML = `<span style="color:var(--green)">✅ Connected! Repo: <strong>${data.full_name}</strong> | Visibility: ${data.private?'🔒 Private':'🌐 Public'}</span>`;
+    } else {
+      const err = await res.json();
+      el.innerHTML = `<span style="color:var(--red)">❌ Error ${res.status}: ${err.message}</span>`;
+    }
+  } catch(e){ el.innerHTML='<span style="color:var(--red)">❌ Network error — check your internet</span>'; }
 }
 
 async function testGithubConnection(){
   const status = document.getElementById('gh-status');
   status.innerHTML = '<span style="color:var(--gold)">⏳ Testing connection...</span>';
+  const token = document.getElementById('gh-token').value.trim();
+  const owner = document.getElementById('gh-owner').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  if(!token||!owner||!repo){ status.innerHTML='<span style="color:var(--red)">❌ Fill in token, username and repo first</span>'; return; }
   try {
-    const res = await fetch(`https://api.github.com/repos/${document.getElementById('gh-owner').value}/${document.getElementById('gh-repo').value}`, {
-      headers:{ 'Authorization':`token ${document.getElementById('gh-token').value}` }
-    });
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`,
+      { headers:{ 'Authorization':`token ${token}` } });
     if(res.ok){
-      status.innerHTML = '<span style="color:var(--green)">✅ Connection successful! Repository found.</span>';
+      const d = await res.json();
+      status.innerHTML = `<span style="color:var(--green)">✅ Connection successful!<br>Repo: <strong>${d.full_name}</strong> | ${d.private?'🔒 Private':'🌐 Public'} | Default branch: ${d.default_branch}</span>`;
+      toast('✅ GitHub connected successfully!', 'success');
     } else {
-      status.innerHTML = `<span style="color:var(--red)">❌ Connection failed (${res.status}). Check credentials.</span>`;
+      const err = await res.json();
+      if(res.status===401) status.innerHTML='<span style="color:var(--red)">❌ Token invalid or expired. Generate a new one.</span>';
+      else if(res.status===404) status.innerHTML='<span style="color:var(--red)">❌ Repo not found. Check username and repo name.</span>';
+      else status.innerHTML=`<span style="color:var(--red)">❌ Error ${res.status}: ${err.message}</span>`;
+      toast(`❌ GitHub connection failed (${res.status})`, 'error');
     }
   } catch(e){
-    status.innerHTML = '<span style="color:var(--red)">❌ Network error. Check your token and repo name.</span>';
+    status.innerHTML='<span style="color:var(--red)">❌ Network error. Check your internet connection.</span>';
+    toast('❌ Cannot reach GitHub — check internet', 'error');
   }
 }
 
 async function pushToGithub(){
   const statusEl = document.getElementById('gh-status');
-  statusEl.innerHTML = '<span style="color:var(--gold)">⬆️ Pushing all data to GitHub...</span>';
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--gold)">⬆️ Pushing all data to GitHub...</span>';
   DB._sha = null; // Force fresh SHA fetch
   await saveDB();
-  statusEl.innerHTML = '<span style="color:var(--green)">✅ All data pushed to GitHub successfully! Check your repo to verify.</span>';
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ All data pushed to GitHub successfully!</span>';
+}
+
+// ============================================================
+// DOWNLOAD HTML WITH TOKEN BAKED IN
+// This is the KEY function — it generates a new HTML file
+// with the GitHub token hardcoded so ANY device can use it.
+// ============================================================
+async function downloadHtmlWithToken(){
+  const token  = document.getElementById('gh-token')?.value.trim() || GITHUB_CONFIG.token;
+  const owner  = document.getElementById('gh-owner')?.value.trim() || GITHUB_CONFIG.owner;
+  const repo   = document.getElementById('gh-repo')?.value.trim()  || GITHUB_CONFIG.repo;
+  const branch = document.getElementById('gh-branch')?.value.trim()|| GITHUB_CONFIG.branch || 'main';
+  const path   = document.getElementById('gh-path')?.value.trim()  || GITHUB_CONFIG.path   || 'bank-data.json';
+
+  if(!token){ toast('⚠️ Enter your GitHub token first', 'warning'); return; }
+  if(!owner){ toast('⚠️ Enter your GitHub username first', 'warning'); return; }
+  if(!repo) { toast('⚠️ Enter your repository name first', 'warning'); return; }
+
+  toast('⏳ Generating HTML file with token...', 'info');
+
+  // Read this page's own HTML source
+  try {
+    const res = await fetch(window.location.href);
+    let html = await res.text();
+
+    // Replace the GITHUB_CONFIG block with hardcoded values
+    html = html.replace(
+      /const GITHUB_CONFIG = \{[\s\S]*?\};/,
+      `const GITHUB_CONFIG = {\n  token:  '${token}',\n  owner:  '${owner}',\n  repo:   '${repo}',\n  path:   '${path}',\n  branch: '${branch}'\n};`
+    );
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'Dhelana Youth Bank.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('✅ Downloaded! Upload this file to GitHub Pages — it works on ALL devices.', 'success', 7000);
+  } catch(e){
+    // Fallback: if fetch(self) fails (e.g. file:// protocol), generate from current document
+    let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    html = html.replace(
+      /token:\s*'[^']*'/,
+      `token:  '${token}'`
+    ).replace(
+      /owner:\s*'[^']*'/,
+      `owner:  '${owner}'`
+    ).replace(
+      /repo:\s*'[^']*'/,
+      `repo:   '${repo}'`
+    ).replace(
+      /branch:\s*'[^']*'/,
+      `branch: '${branch}'`
+    );
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'Dhelana Youth Bank.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('✅ Downloaded! Use this file on all devices.', 'success', 6000);
+  }
 }
 
 // ============================================================
