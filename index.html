@@ -490,7 +490,6 @@ tr:hover td { background:rgba(201,168,76,0.04); }
       <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
         Secured by Dhelana Youth Bank • Version 1.0
       </div>
-      <div id="gh-login-status" style="text-align:center;margin-top:10px;font-size:11px;padding:6px 12px;border-radius:8px;display:none"></div>
     </div>
   </div>
 
@@ -548,38 +547,31 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 
 <script>
 // ============================================================
-// GITHUB DATA STORE CONFIG
-// owner & repo are pre-filled. Token must be set once per device
-// OR use "Download HTML with Token" to bake it in permanently.
+// GITHUB CONFIG
+// READ  → uses raw public URL — no token needed — works for ALL devices
+// WRITE → uses token — only admin device needs this
 // ============================================================
 const GITHUB_CONFIG = {
-  token:  '',               // SET THIS ONCE — see setup overlay on first open
-  owner:  'nikul2004',      // Your GitHub username — already set
-  repo:   'dhelana-bank-data', // Your repo — already set
+  token:  '',               // Only admin needs this — users never need it
+  owner:  'nikul2004',
+  repo:   'dhelana-bank-data',
   path:   'bank-data.json',
   branch: 'main'
 };
 
-// Load token from localStorage (saved on this device previously)
+// Load admin token from localStorage if already saved on this device
 (()=>{
   try {
-    const saved = localStorage.getItem('dhelana_github_config');
-    if(saved){
-      const c = JSON.parse(saved);
-      if(c.token)  GITHUB_CONFIG.token  = c.token;
-      if(c.owner)  GITHUB_CONFIG.owner  = c.owner;
-      if(c.repo)   GITHUB_CONFIG.repo   = c.repo;
-      if(c.path)   GITHUB_CONFIG.path   = c.path;
-      if(c.branch) GITHUB_CONFIG.branch = c.branch;
-    }
+    const s = localStorage.getItem('dyb_admin_token');
+    if(s) GITHUB_CONFIG.token = s;
   } catch(e){}
 })();
 
 let DB = null;
 let currentUser = null;
 let currentRole = null;
-let currentTab = 'user';
-let activePage = 'overview';
+let currentTab  = 'user';
+let activePage  = 'overview';
 
 // ============================================================
 // PARTICLES
@@ -587,202 +579,33 @@ let activePage = 'overview';
 (function(){
   const canvas = document.getElementById('particles-canvas');
   const ctx = canvas.getContext('2d');
-  let W, H, particles = [];
-  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  let W, H, parts = [];
+  function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
   resize(); window.addEventListener('resize', resize);
-  for(let i=0;i<60;i++) particles.push({
-    x:Math.random()*2000, y:Math.random()*1200,
-    r:Math.random()*2+0.5,
-    vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3,
-    alpha:Math.random()*0.5+0.2
-  });
-  function draw(){
+  for(let i=0;i<60;i++) parts.push({ x:Math.random()*2000, y:Math.random()*1200, r:Math.random()*2+0.5, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3, a:Math.random()*.5+.2 });
+  (function draw(){
     ctx.clearRect(0,0,W,H);
-    particles.forEach(p=>{
-      p.x += p.vx; p.y += p.vy;
-      if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(201,168,76,${p.alpha})`; ctx.fill();
-    });
+    parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`rgba(201,168,76,${p.a})`; ctx.fill(); });
     requestAnimationFrame(draw);
-  }
-  draw();
+  })();
 })();
 
 // ============================================================
-// LOADER + FIRST-TIME TOKEN SETUP
+// LOADER — reads data publicly, no token needed for users
 // ============================================================
 window.addEventListener('load', async ()=>{
-  await loadDB();
+  await loadDB();          // always reads via public raw URL — no token needed
   setTimeout(()=>{
     const loader = document.getElementById('loader');
     loader.style.opacity = '0';
-    setTimeout(()=>{
-      loader.style.display = 'none';
-
-      // Update login status badge
-      updateGhLoginBadge();
-
-      // If no token on this device, show the setup overlay
-      if(!GITHUB_CONFIG.token){
-        showTokenSetupOverlay();
-      }
-    }, 800);
+    setTimeout(()=>{ loader.style.display = 'none'; }, 800);
   }, 2200);
 });
 
-function updateGhLoginBadge(){
-  const el = document.getElementById('gh-login-status');
-  if(!el) return;
-  if(GITHUB_CONFIG.token){
-    el.style.display  = 'block';
-    el.style.background = 'rgba(46,204,113,0.1)';
-    el.style.border   = '1px solid rgba(46,204,113,0.2)';
-    el.style.color    = '#2ECC71';
-    el.innerHTML      = `🐙 GitHub Connected: <strong>${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}</strong>`;
-  } else {
-    el.style.display  = 'block';
-    el.style.background = 'rgba(241,196,15,0.08)';
-    el.style.border   = '1px solid rgba(241,196,15,0.2)';
-    el.style.color    = '#F1C40F';
-    el.innerHTML      = `⚠️ GitHub token missing on this device — <a href="#" onclick="showTokenSetupOverlay()" style="color:#F1C40F;text-decoration:underline">Click to set up →</a>`;
-  }
-}
-
-// ============================================================
-// TOKEN SETUP OVERLAY — shown on new devices
-// ============================================================
-function showTokenSetupOverlay(){
-  let overlay = document.getElementById('token-setup-overlay');
-  if(overlay){ overlay.style.display='flex'; return; }
-
-  overlay = document.createElement('div');
-  overlay.id = 'token-setup-overlay';
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:rgba(11,26,46,0.97);z-index:99998;
-    display:flex;align-items:center;justify-content:center;padding:16px;
-    animation:fadeIn 0.3s ease;
-  `;
-  overlay.innerHTML = `
-    <div style="
-      background:linear-gradient(135deg,#122340,#1A3254);
-      border:1px solid rgba(201,168,76,0.4);border-radius:20px;
-      padding:36px;width:100%;max-width:480px;
-      box-shadow:0 30px 80px rgba(0,0,0,0.6);
-      animation:modalSlide 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    ">
-      <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:48px;margin-bottom:12px">🔑</div>
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;background:linear-gradient(135deg,#C9A84C,#E8C97A);-webkit-background-clip:text;-webkit-text-fill-color:transparent">GitHub Token Required</div>
-        <div style="color:#8A9BB0;font-size:13px;margin-top:8px;line-height:1.6">
-          This is a <strong style="color:#F5F0E8">new device</strong>. Paste your GitHub token once<br>to connect to the bank database.
-        </div>
-      </div>
-
-      <div style="background:rgba(52,152,219,0.08);border:1px solid rgba(52,152,219,0.2);border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:#8A9BB0;line-height:1.8">
-        <strong style="color:#3498DB">📋 Where to get your token:</strong><br>
-        GitHub.com → Profile → Settings → Developer settings →<br>
-        Personal access tokens → Tokens (classic) → Copy your token
-      </div>
-
-      <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;color:#C9A84C;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:8px">GitHub Personal Access Token</label>
-        <input
-          type="password" id="setup-token-input"
-          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-          style="width:100%;padding:14px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.3);border-radius:10px;color:#F5F0E8;font-family:monospace;font-size:14px;outline:none;transition:border 0.2s"
-          onfocus="this.style.borderColor='#C9A84C'"
-          onblur="this.style.borderColor='rgba(201,168,76,0.3)'"
-          onkeydown="if(event.key==='Enter')connectWithToken()"
-        />
-      </div>
-      <div id="setup-token-info" style="font-size:12px;color:#8A9BB0;margin-bottom:4px">
-        Repo: <strong style="color:#F5F0E8">nikul2004/dhelana-bank-data</strong> (pre-configured)
-      </div>
-      <div id="setup-status" style="font-size:13px;min-height:20px;margin-bottom:16px"></div>
-
-      <button onclick="connectWithToken()" style="
-        width:100%;padding:15px;background:linear-gradient(135deg,#9A7A2E,#E8C97A);
-        border:none;border-radius:10px;color:#0B1A2E;font-family:'DM Sans',sans-serif;
-        font-size:15px;font-weight:700;cursor:pointer;transition:transform 0.2s;margin-bottom:10px;
-      " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-        🔗 Connect to GitHub
-      </button>
-      <button onclick="skipTokenSetup()" style="
-        width:100%;padding:11px;background:transparent;border:1px solid rgba(255,255,255,0.1);
-        border-radius:10px;color:#8A9BB0;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;
-      ">
-        Skip — use local storage only (data won't sync)
-      </button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-async function connectWithToken(){
-  const input = document.getElementById('setup-token-input');
-  const status = document.getElementById('setup-status');
-  const token = input ? input.value.trim() : '';
-
-  if(!token){
-    if(status) status.innerHTML = '<span style="color:#E74C3C">⚠️ Please paste your token first</span>';
-    return;
-  }
-  if(!token.startsWith('ghp_') && !token.startsWith('github_pat_')){
-    if(status) status.innerHTML = '<span style="color:#E74C3C">⚠️ Token should start with ghp_ — check you copied it correctly</span>';
-    return;
-  }
-
-  if(status) status.innerHTML = '<span style="color:#C9A84C">⏳ Verifying token with GitHub...</span>';
-
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`,
-      { headers:{ 'Authorization':`token ${token}` } }
-    );
-
-    if(res.ok){
-      // Token works — save it
-      GITHUB_CONFIG.token = token;
-      localStorage.setItem('dhelana_github_config', JSON.stringify({
-        token, owner:GITHUB_CONFIG.owner, repo:GITHUB_CONFIG.repo,
-        branch:GITHUB_CONFIG.branch, path:GITHUB_CONFIG.path
-      }));
-
-      if(status) status.innerHTML = '<span style="color:#2ECC71">✅ Connected! Loading data from GitHub...</span>';
-
-      // Reload DB from GitHub now that we have token
-      DB._sha = null;
-      await loadDB();
-      updateGhLoginBadge();
-
-      setTimeout(()=>{
-        const overlay = document.getElementById('token-setup-overlay');
-        if(overlay){ overlay.style.opacity='0'; overlay.style.transition='opacity 0.4s'; setTimeout(()=>overlay.remove(), 400); }
-        toast('✅ GitHub connected! Data loaded successfully.', 'success', 5000);
-      }, 1200);
-
-    } else if(res.status === 401){
-      if(status) status.innerHTML = '<span style="color:#E74C3C">❌ Token is invalid or expired. Generate a new one on GitHub.</span>';
-    } else if(res.status === 404){
-      if(status) status.innerHTML = `<span style="color:#E74C3C">❌ Repo "dhelana-bank-data" not found under nikul2004. Check repo name.</span>`;
-    } else {
-      if(status) status.innerHTML = `<span style="color:#E74C3C">❌ GitHub error ${res.status}. Try again.</span>`;
-    }
-  } catch(e){
-    if(status) status.innerHTML = '<span style="color:#E74C3C">❌ Cannot reach GitHub. Check your internet connection.</span>';
-  }
-}
-
-function skipTokenSetup(){
-  const overlay = document.getElementById('token-setup-overlay');
-  if(overlay){ overlay.style.opacity='0'; overlay.style.transition='opacity 0.3s'; setTimeout(()=>overlay.remove(), 300); }
-  toast('ℹ️ Running in local mode — data will not sync across devices', 'info', 5000);
-  updateGhLoginBadge();
-}
-
 // ============================================================
 // DATA LAYER
+// READ  → raw.githubusercontent.com (public, no token, works for everyone)
+// WRITE → GitHub API with token (only when admin saves data)
 // ============================================================
 function defaultDB(){
   return {
@@ -798,90 +621,166 @@ function defaultDB(){
 
 async function loadDB(){
   const def = defaultDB();
-  if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
-    try {
-      const res = await fetch(
-        `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`,
-        { headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Accept':'application/vnd.github.v3+json', 'Cache-Control':'no-cache' } }
-      );
-      if(res.ok){
-        const data = await res.json();
-        let parsed = {};
-        try{ parsed = JSON.parse(atob(data.content.replace(/\n/g,''))); }catch(e){ parsed={}; }
-        if(!parsed.admins && !parsed.users){ DB = def; }
-        else { DB = parsed; }
-        DB._sha = data.sha;
-        // If _tk is in the file, keep token fresh in localStorage for this device
-        if(DB._tk){
-          const tkDecoded = atob(DB._tk);
-          if(tkDecoded && !GITHUB_CONFIG.token){
-            GITHUB_CONFIG.token = tkDecoded;
-            localStorage.setItem('dhelana_github_config', JSON.stringify({
-              token:tkDecoded, owner:GITHUB_CONFIG.owner, repo:GITHUB_CONFIG.repo,
-              branch:GITHUB_CONFIG.branch, path:GITHUB_CONFIG.path
-            }));
-          }
-        }
-        DB.settings = Object.assign({}, def.settings, DB.settings||{});
-        if(!DB.admins||DB.admins.length===0) DB.admins=def.admins;
-        if(!DB.users) DB.users=[];
-        if(!DB.transactions) DB.transactions=[];
-        if(!DB.loans) DB.loans=[];
-        if(!DB.penalties) DB.penalties=[];
-        if(!DB.sharePayments) DB.sharePayments=[];
-        if(!DB.monthlyPayments) DB.monthlyPayments=[];
-        console.log('✅ Loaded from GitHub. Users:', DB.users.length);
-        return;
-      } else { console.log('GitHub load failed:', res.status); }
-    } catch(e){ console.log('GitHub load error:', e.message); }
-  }
-  // Fallback localStorage
-  const saved = localStorage.getItem('dhelana_bank_db');
-  DB = saved ? JSON.parse(saved) : def;
-  DB.settings = Object.assign({}, def.settings, DB.settings||{});
-  if(!DB.admins||DB.admins.length===0) DB.admins=def.admins;
-  if(!DB.users) DB.users=[];
-  if(!DB.transactions) DB.transactions=[];
-  if(!DB.loans) DB.loans=[];
-  if(!DB.penalties) DB.penalties=[];
-  if(!DB.sharePayments) DB.sharePayments=[];
-  if(!DB.monthlyPayments) DB.monthlyPayments=[];
-  console.log('📦 Loaded from localStorage. Users:', DB.users.length);
+  try {
+    // PUBLIC raw URL — no authentication needed — works on ANY device
+    const url = `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.path}?t=${Date.now()}`;
+    const res = await fetch(url, { cache:'no-store' });
+    if(res.ok){
+      let parsed = {};
+      try { parsed = await res.json(); } catch(e){ parsed = {}; }
+      if(!parsed.admins && !parsed.users){
+        DB = def;
+      } else {
+        DB = parsed;
+      }
+      DB.settings = Object.assign({}, def.settings, DB.settings||{});
+      if(!DB.admins||!DB.admins.length) DB.admins = def.admins;
+      if(!DB.users)         DB.users         = [];
+      if(!DB.transactions)  DB.transactions  = [];
+      if(!DB.loans)         DB.loans         = [];
+      if(!DB.penalties)     DB.penalties     = [];
+      if(!DB.sharePayments) DB.sharePayments = [];
+      if(!DB.monthlyPayments) DB.monthlyPayments = [];
+      // Also cache locally as backup
+      localStorage.setItem('dyb_db_cache', JSON.stringify(DB));
+      console.log('✅ DB loaded from GitHub (public). Users:', DB.users.length);
+      return;
+    }
+  } catch(e){ console.log('Public read failed, using cache:', e.message); }
+
+  // Fallback — use locally cached copy
+  try {
+    const cached = localStorage.getItem('dyb_db_cache');
+    if(cached){
+      DB = JSON.parse(cached);
+      DB.settings = Object.assign({}, def.settings, DB.settings||{});
+      console.log('📦 Loaded from local cache. Users:', DB.users.length);
+      return;
+    }
+  } catch(e){}
+
+  DB = def;
+  console.log('📦 Using default DB');
 }
 
 async function saveDB(){
+  // Save local cache always
   const payload = {...DB};
   delete payload._sha;
-  // Always keep encoded token in the data so new devices bootstrap automatically
-  if(GITHUB_CONFIG.token) payload._tk = btoa(GITHUB_CONFIG.token);
-  localStorage.setItem('dhelana_bank_db', JSON.stringify(payload));
-  if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
-    try {
-      const getRes = await fetch(
-        `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`,
-        { headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Accept':'application/vnd.github.v3+json', 'Cache-Control':'no-cache' } }
-      );
-      let latestSha = DB._sha||null;
-      if(getRes.ok){ const ex=await getRes.json(); latestSha=ex.sha; }
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
-      const body = { message:`Bank update: ${new Date().toLocaleString('en-IN')}`, content, branch:GITHUB_CONFIG.branch||'main' };
-      if(latestSha) body.sha = latestSha;
-      const putRes = await fetch(
-        `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`,
-        { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' }, body:JSON.stringify(body) }
-      );
-      if(putRes.ok){
-        const d=await putRes.json(); DB._sha=d.content.sha;
-        toast('✅ Saved to GitHub','success'); return;
-      } else {
-        const err=await putRes.json(); console.error('Save error:',err);
-        if(putRes.status===401) toast('❌ GitHub token invalid — re-enter in GitHub Config','error');
-        else if(putRes.status===404) toast('❌ Repo not found — check GitHub Config','error');
-        else toast(`❌ GitHub error ${putRes.status} — saved locally`,'error');
-      }
-    } catch(e){ console.error('saveDB exception:',e); toast('⚠️ GitHub unreachable — saved locally','info'); }
+  localStorage.setItem('dyb_db_cache', JSON.stringify(payload));
+
+  // Only write to GitHub if we have a token (admin device)
+  if(!GITHUB_CONFIG.token){
+    // No token — show admin token prompt silently only if current user is admin
+    if(currentRole === 'admin'){
+      showAdminTokenPrompt();
+    }
+    return;
   }
-  toast('💾 Saved locally','info');
+
+  try {
+    // Get latest SHA for the file
+    const getRes = await fetch(
+      `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`,
+      { headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Accept':'application/vnd.github.v3+json', 'Cache-Control':'no-cache' } }
+    );
+    let sha = null;
+    if(getRes.ok){ const ex = await getRes.json(); sha = ex.sha; }
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+    const body = { message:`Bank update ${new Date().toLocaleString('en-IN')}`, content, branch:GITHUB_CONFIG.branch };
+    if(sha) body.sha = sha;
+
+    const putRes = await fetch(
+      `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`,
+      { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' }, body:JSON.stringify(body) }
+    );
+
+    if(putRes.ok){
+      toast('✅ Saved to GitHub', 'success');
+    } else {
+      const err = await putRes.json().catch(()=>({}));
+      if(putRes.status===401){
+        toast('❌ Admin token expired — re-enter in GitHub Config', 'error');
+        GITHUB_CONFIG.token = '';
+        localStorage.removeItem('dyb_admin_token');
+      } else {
+        toast(`❌ GitHub save error ${putRes.status}`, 'error');
+      }
+    }
+  } catch(e){
+    toast('⚠️ Could not reach GitHub — cached locally', 'info');
+  }
+}
+
+// ============================================================
+// ADMIN TOKEN PROMPT — only appears when admin tries to save
+// but token is missing on this admin device
+// ============================================================
+function showAdminTokenPrompt(){
+  if(document.getElementById('admin-token-prompt')) return;
+  const d = document.createElement('div');
+  d.id = 'admin-token-prompt';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(11,26,46,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn 0.3s ease';
+  d.innerHTML = `
+    <div style="background:linear-gradient(135deg,#122340,#1A3254);border:1px solid rgba(201,168,76,0.4);border-radius:20px;padding:36px;width:100%;max-width:440px;box-shadow:0 30px 80px rgba(0,0,0,0.6)">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:44px;margin-bottom:8px">🔑</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#E8C97A">Admin Token Required</div>
+        <div style="color:#8A9BB0;font-size:13px;margin-top:8px;line-height:1.6">
+          You are logged in as <strong style="color:#F5F0E8">Admin</strong> on a new device.<br>
+          Enter your GitHub token <strong style="color:#C9A84C">once</strong> to enable saving.<br>
+          <strong style="color:#2ECC71">Regular users never see this.</strong>
+        </div>
+      </div>
+      <div style="background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.15);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#8A9BB0;line-height:1.8">
+        Get token: <strong style="color:#F5F0E8">github.com → Settings → Developer settings<br>→ Personal access tokens → Tokens (classic)</strong><br>
+        → Generate new token → check <strong style="color:#F5F0E8">repo</strong> → Copy
+      </div>
+      <label style="font-size:11px;font-weight:700;color:#C9A84C;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:8px">GitHub Token</label>
+      <input type="password" id="atp-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+        style="width:100%;padding:13px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.3);border-radius:10px;color:#F5F0E8;font-family:monospace;font-size:14px;outline:none;margin-bottom:6px"
+        onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor='rgba(201,168,76,0.3)'"
+        onkeydown="if(event.key==='Enter')saveAdminToken()" />
+      <div id="atp-status" style="font-size:12px;min-height:18px;margin-bottom:14px;color:#8A9BB0"></div>
+      <button onclick="saveAdminToken()" style="width:100%;padding:14px;background:linear-gradient(135deg,#9A7A2E,#E8C97A);border:none;border-radius:10px;color:#0B1A2E;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px">
+        🔗 Verify &amp; Save Token
+      </button>
+      <button onclick="dismissAdminTokenPrompt()" style="width:100%;padding:10px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#8A9BB0;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">
+        Cancel — changes saved locally only
+      </button>
+    </div>`;
+  document.body.appendChild(d);
+  setTimeout(()=>{ const inp = document.getElementById('atp-input'); if(inp) inp.focus(); }, 100);
+}
+
+async function saveAdminToken(){
+  const input  = document.getElementById('atp-input');
+  const status = document.getElementById('atp-status');
+  const token  = input ? input.value.trim() : '';
+  if(!token){ if(status) status.innerHTML='<span style="color:#E74C3C">⚠️ Paste your token first</span>'; return; }
+  if(!token.startsWith('ghp_') && !token.startsWith('github_pat_')){ if(status) status.innerHTML='<span style="color:#E74C3C">⚠️ Must start with ghp_ — re-copy</span>'; return; }
+  if(status) status.innerHTML='<span style="color:#C9A84C">⏳ Verifying...</span>';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`,
+      { headers:{ 'Authorization':`token ${token}` } });
+    if(res.ok){
+      GITHUB_CONFIG.token = token;
+      localStorage.setItem('dyb_admin_token', token);
+      if(status) status.innerHTML='<span style="color:#2ECC71">✅ Token saved on this device!</span>';
+      setTimeout(async ()=>{
+        dismissAdminTokenPrompt();
+        await saveDB(); // retry the save now that we have token
+      }, 800);
+    } else if(res.status===401){ if(status) status.innerHTML='<span style="color:#E74C3C">❌ Invalid token — generate a new one</span>'; }
+      else if(res.status===404){ if(status) status.innerHTML='<span style="color:#E74C3C">❌ Repo not found — check repo name</span>'; }
+      else { if(status) status.innerHTML=`<span style="color:#E74C3C">❌ Error ${res.status}</span>`; }
+  } catch(e){ if(status) status.innerHTML='<span style="color:#E74C3C">❌ No internet</span>'; }
+}
+
+function dismissAdminTokenPrompt(){
+  const d = document.getElementById('admin-token-prompt');
+  if(d){ d.style.opacity='0'; d.style.transition='opacity 0.3s'; setTimeout(()=>d.remove(), 300); }
 }
 
 // ============================================================
