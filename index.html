@@ -348,13 +348,26 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 #toast-container { position:fixed; bottom:24px; right:24px; z-index:9000; display:flex; flex-direction:column; gap:10px; }
 .toast {
   padding:14px 20px; border-radius:12px; font-size:14px; font-weight:500;
-  min-width:280px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
-  animation: toastIn 0.3s ease; display:flex; align-items:center; gap:10px;
+  min-width:300px; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1); display:flex; align-items:center; gap:10px;
 }
-@keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
-.toast.success { background:rgba(46,204,113,0.95); color:#fff; }
-.toast.error { background:rgba(231,76,60,0.95); color:#fff; }
-.toast.info { background:rgba(52,152,219,0.95); color:#fff; }
+@keyframes toastIn { from{opacity:0;transform:translateX(60px) scale(0.9)} to{opacity:1;transform:translateX(0) scale(1)} }
+.toast.success { background:linear-gradient(135deg,#1a5c35,#1e7a42); color:#fff; border:1px solid rgba(46,204,113,0.4); }
+.toast.error   { background:linear-gradient(135deg,#6b1a1a,#8b2020); color:#fff; border:1px solid rgba(231,76,60,0.4); }
+.toast.info    { background:linear-gradient(135deg,#1a3a5c,#1a4a7a); color:#fff; border:1px solid rgba(52,152,219,0.4); }
+.toast.warning { background:linear-gradient(135deg,#5c4a1a,#7a6020); color:#fff; border:1px solid rgba(241,196,15,0.4); }
+.toast-icon { font-size:18px; flex-shrink:0; }
+.toast-msg { flex:1; line-height:1.4; }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(-8px)}
+  30%{transform:translateX(8px)}
+  45%{transform:translateX(-6px)}
+  60%{transform:translateX(6px)}
+  75%{transform:translateX(-3px)}
+  90%{transform:translateX(3px)}
+}
 
 /* MOBILE TOGGLE */
 .mobile-menu-btn {
@@ -751,38 +764,103 @@ async function saveDB(){
 // ============================================================
 function switchLoginTab(tab){
   currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach((b,i)=> b.classList.toggle('active', (tab==='user'&&i===0)||(tab==='admin'&&i===1)));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>
+    b.classList.toggle('active', (tab==='user'&&i===0)||(tab==='admin'&&i===1))
+  );
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-userid').placeholder = tab==='admin' ? 'Enter Admin ID' : 'Enter your User ID';
 }
 
 function doLogin(){
   const id = document.getElementById('login-userid').value.trim();
   const pw = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  errEl.style.display = 'none';
-  if(!id||!pw){ showError('Please enter User ID and Password'); return; }
 
-  if(currentTab==='admin'){
-    const admin = DB.admins.find(a=>a.id===id && a.password===pw);
-    if(!admin){ showError('Invalid admin credentials'); return; }
-    currentUser = admin; currentRole = 'admin';
+  // Clear previous error
+  document.getElementById('login-error').style.display = 'none';
+
+  // --- Validation ---
+  if(!id && !pw){ showLoginError('Please enter your User ID and Password'); toast('⚠️ User ID and Password are required', 'error'); return; }
+  if(!id){ showLoginError('Please enter your User ID'); toast('⚠️ User ID is required', 'error'); return; }
+  if(!pw){ showLoginError('Please enter your Password'); toast('⚠️ Password is required', 'error'); return; }
+
+  // --- DB not loaded yet ---
+  if(!DB){ showLoginError('App is still loading. Please wait and try again.'); toast('⏳ Database not loaded yet — please wait', 'error'); return; }
+
+  if(currentTab === 'admin'){
+    // Check DB has admins array
+    if(!DB.admins || DB.admins.length === 0){
+      showLoginError('No admin accounts found. Database may not be loaded.');
+      toast('❌ Admin accounts not found — check GitHub config', 'error');
+      return;
+    }
+    // Find admin by ID only first
+    const adminById = DB.admins.find(a => a.id === id);
+    if(!adminById){
+      showLoginError('Admin ID not found. Check your Admin ID.');
+      toast(`❌ Admin ID "${id}" does not exist`, 'error');
+      return;
+    }
+    // Check password
+    if(adminById.password !== pw){
+      showLoginError('Wrong password. Please try again.');
+      toast('❌ Incorrect admin password', 'error');
+      return;
+    }
+    currentUser = adminById;
+    currentRole = 'admin';
+    toast(`✅ Welcome back, ${adminById.name}!`, 'success');
+
   } else {
-    const user = DB.users.find(u=>u.id===id && u.password===pw);
-    if(!user){ showError('Invalid user credentials'); return; }
-    if(user.status==='inactive'){ showError('Account is inactive. Contact admin.'); return; }
-    currentUser = user; currentRole = 'user';
+    // Check DB has users array
+    if(!DB.users || DB.users.length === 0){
+      showLoginError('No members found in the system.');
+      toast('❌ No members registered yet', 'error');
+      return;
+    }
+    // Find user by ID only first
+    const userById = DB.users.find(u => u.id === id);
+    if(!userById){
+      showLoginError('User ID not found. Contact your bank admin.');
+      toast(`❌ User ID "${id}" does not exist`, 'error');
+      return;
+    }
+    // Check password
+    if(userById.password !== pw){
+      showLoginError('Wrong password. Please try again.');
+      toast('❌ Incorrect password', 'error');
+      return;
+    }
+    // Check status
+    if(userById.status === 'inactive'){
+      showLoginError('Your account is deactivated. Contact the bank admin.');
+      toast('🔒 Account is deactivated — contact admin', 'error');
+      return;
+    }
+    currentUser = userById;
+    currentRole = 'user';
+    toast(`✅ Welcome, ${userById.name}!`, 'success');
   }
+
   openDashboard();
 }
 
-function showError(msg){
+function showLoginError(msg){
   const e = document.getElementById('login-error');
-  e.textContent = '❌ '+msg; e.style.display='block';
+  e.textContent = '❌ ' + msg;
+  e.style.display = 'block';
+  // Shake animation
+  const card = document.querySelector('.login-card');
+  card.style.animation = 'none';
+  card.offsetHeight; // reflow
+  card.style.animation = 'shake 0.4s ease';
 }
 
 function doLogout(){
-  currentUser=null; currentRole=null;
-  document.getElementById('login-userid').value='';
-  document.getElementById('login-password').value='';
+  currentUser = null; currentRole = null;
+  document.getElementById('login-userid').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  toast('👋 Logged out successfully', 'info');
   showSection('login-page');
 }
 
@@ -2248,15 +2326,31 @@ function closeModal(){ document.getElementById('modal-overlay').classList.remove
 document.getElementById('modal-overlay').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
 
 // ============================================================
-// TOAST
+// TOAST NOTIFICATION SYSTEM
 // ============================================================
-function toast(msg, type='info'){
-  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+function toast(msg, type='info', duration=3500){
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `${icons[type]||'ℹ️'} ${msg}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
+
+  // Click to dismiss
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', ()=>dismissToast(el));
+
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(40px)'; el.style.transition='all 0.3s'; setTimeout(()=>el.remove(), 300); }, 3000);
+
+  // Auto dismiss
+  const timer = setTimeout(()=>dismissToast(el), duration);
+  el._timer = timer;
+}
+
+function dismissToast(el){
+  clearTimeout(el._timer);
+  el.style.opacity = '0';
+  el.style.transform = 'translateX(60px) scale(0.9)';
+  el.style.transition = 'all 0.3s ease';
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 300);
 }
 </script>
 </body>
