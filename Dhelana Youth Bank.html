@@ -1,0 +1,2189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dhelana Youth Bank</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C;
+  --gold-light: #E8C97A;
+  --gold-dark: #9A7A2E;
+  --navy: #0B1A2E;
+  --navy-mid: #122340;
+  --navy-light: #1A3254;
+  --cream: #F5F0E8;
+  --white: #FFFFFF;
+  --green: #2ECC71;
+  --red: #E74C3C;
+  --blue-accent: #3498DB;
+  --text-muted: #8A9BB0;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== PARTICLE BG ===== */
+#particles-canvas {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events:none; z-index:0; opacity:0.4;
+}
+
+/* ===== LOADER ===== */
+#loader {
+  position:fixed; inset:0; background:var(--navy); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transition: opacity 0.8s ease;
+}
+#loader .logo-anim { animation: logoSpin 1.5s ease forwards; }
+@keyframes logoSpin {
+  0%{transform:scale(0) rotate(-180deg);opacity:0}
+  60%{transform:scale(1.1) rotate(10deg);opacity:1}
+  100%{transform:scale(1) rotate(0deg);opacity:1}
+}
+#loader .loader-bar {
+  width:200px; height:3px; background:var(--navy-light);
+  border-radius:2px; margin-top:24px; overflow:hidden;
+}
+#loader .loader-fill {
+  height:100%; width:0%; background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+  border-radius:2px; animation: loadFill 2s ease forwards;
+}
+@keyframes loadFill { to { width:100%; } }
+#loader p { margin-top:12px; color:var(--gold); font-size:13px; letter-spacing:3px; text-transform:uppercase; }
+
+/* ===== MAIN APP ===== */
+#app { position:relative; z-index:1; min-height:100vh; }
+
+/* ===== SECTIONS ===== */
+.section { display:none; animation: fadeSlideIn 0.5s ease; }
+.section.active { display:block; }
+@keyframes fadeSlideIn {
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ===== LOGIN PAGE ===== */
+#login-page {
+  min-height:100vh; display:none; align-items:center; justify-content:center;
+  position:relative;
+}
+#login-page.active { display:flex; }
+.login-card {
+  background: linear-gradient(135deg, rgba(18,35,64,0.95) 0%, rgba(26,50,84,0.95) 100%);
+  border:1px solid rgba(201,168,76,0.3);
+  border-radius:20px; padding:48px 40px;
+  width:420px; max-width:95vw;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.1);
+  position:relative; overflow:hidden;
+  animation: cardAppear 0.8s cubic-bezier(0.34,1.56,0.64,1) 2.2s both;
+}
+@keyframes cardAppear {
+  from{opacity:0;transform:scale(0.8) translateY(30px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+.login-card::before {
+  content:''; position:absolute; top:-50%; left:-50%;
+  width:200%; height:200%;
+  background: radial-gradient(circle at 60% 40%, rgba(201,168,76,0.05) 0%, transparent 60%);
+  pointer-events:none;
+}
+.bank-logo {
+  text-align:center; margin-bottom:32px;
+}
+.logo-icon {
+  width:80px; height:80px; margin:0 auto 16px;
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+  border-radius:20px; display:flex; align-items:center; justify-content:center;
+  font-size:36px; box-shadow: 0 8px 32px rgba(201,168,76,0.3);
+  position:relative; overflow:hidden;
+}
+.logo-icon::after {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.2));
+}
+.bank-name {
+  font-family:'Playfair Display', serif;
+  font-size:26px; font-weight:900;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  line-height:1.1;
+}
+.bank-tagline { font-size:11px; letter-spacing:3px; color:var(--text-muted); text-transform:uppercase; margin-top:4px; }
+
+.login-tabs { display:flex; gap:8px; margin-bottom:28px; background:rgba(255,255,255,0.05); border-radius:10px; padding:4px; }
+.tab-btn {
+  flex:1; padding:10px; border:none; background:transparent;
+  color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500;
+  border-radius:8px; cursor:pointer; transition:all 0.3s;
+}
+.tab-btn.active { background: linear-gradient(135deg, var(--gold-dark), var(--gold)); color:var(--navy); font-weight:700; }
+
+.form-group { margin-bottom:20px; }
+.form-group label { display:block; font-size:12px; font-weight:600; color:var(--gold); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.form-group input {
+  width:100%; padding:14px 16px;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(201,168,76,0.2);
+  border-radius:10px; color:var(--cream); font-family:'DM Sans',sans-serif; font-size:15px;
+  transition:all 0.3s; outline:none;
+}
+.form-group input:focus { border-color:var(--gold); background:rgba(201,168,76,0.08); box-shadow:0 0 0 3px rgba(201,168,76,0.1); }
+.form-group input::placeholder { color:var(--text-muted); }
+
+.btn-primary {
+  width:100%; padding:15px;
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+  border:none; border-radius:10px;
+  color:var(--navy); font-family:'DM Sans',sans-serif;
+  font-size:15px; font-weight:700; letter-spacing:1px;
+  cursor:pointer; transition:all 0.3s;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(201,168,76,0.4); }
+.btn-primary:active { transform:translateY(0); }
+
+.error-msg { color:var(--red); font-size:13px; text-align:center; margin-top:12px; display:none; }
+.success-msg { color:var(--green); font-size:13px; text-align:center; margin-top:12px; display:none; }
+
+/* ===== DASHBOARD ===== */
+#dashboard { min-height:100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  position:fixed; left:0; top:0; height:100vh; width:260px;
+  background: linear-gradient(180deg, var(--navy-mid) 0%, var(--navy) 100%);
+  border-right:1px solid rgba(201,168,76,0.15);
+  z-index:100; display:flex; flex-direction:column;
+  transition:transform 0.3s ease;
+}
+.sidebar-logo {
+  padding:28px 24px; border-bottom:1px solid rgba(201,168,76,0.1);
+  display:flex; align-items:center; gap:14px;
+}
+.sidebar-logo .logo-icon-sm {
+  width:42px; height:42px; min-width:42px;
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+  border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;
+}
+.sidebar-logo .bank-name-sm {
+  font-family:'Playfair Display',serif; font-size:15px; font-weight:700;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  line-height:1.2;
+}
+
+.sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+.nav-section-label {
+  font-size:10px; font-weight:700; letter-spacing:2px;
+  color:var(--text-muted); text-transform:uppercase;
+  padding:12px 12px 6px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  border-radius:10px; cursor:pointer; transition:all 0.2s;
+  color:var(--text-muted); font-size:14px; font-weight:500; margin-bottom:2px;
+}
+.nav-item:hover { background:rgba(201,168,76,0.08); color:var(--cream); }
+.nav-item.active { background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.08)); color:var(--gold); border-left:3px solid var(--gold); }
+.nav-item .nav-icon { width:20px; text-align:center; font-size:16px; }
+.nav-item .badge {
+  margin-left:auto; background:var(--red); color:#fff;
+  font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;
+}
+
+.sidebar-footer {
+  padding:16px 12px; border-top:1px solid rgba(201,168,76,0.1);
+}
+.user-info-bar {
+  display:flex; align-items:center; gap:10px; padding:12px 14px;
+  background:rgba(255,255,255,0.04); border-radius:10px; margin-bottom:8px;
+}
+.user-avatar {
+  width:36px; height:36px; background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:700; color:var(--navy); flex-shrink:0;
+}
+.user-details .user-name { font-size:13px; font-weight:600; color:var(--cream); }
+.user-details .user-role { font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; }
+.btn-logout {
+  width:100%; padding:10px; background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.2);
+  border-radius:8px; color:var(--red); font-family:'DM Sans',sans-serif;
+  font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;
+}
+.btn-logout:hover { background:rgba(231,76,60,0.2); }
+
+/* MAIN CONTENT */
+.main-content {
+  margin-left:260px; min-height:100vh;
+  padding:32px; transition:margin 0.3s;
+}
+
+.page-header { margin-bottom:32px; }
+.page-title {
+  font-family:'Playfair Display',serif; font-size:32px; font-weight:900;
+  background: linear-gradient(135deg, var(--cream), var(--gold-light));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.page-subtitle { color:var(--text-muted); font-size:14px; margin-top:4px; }
+
+/* STAT CARDS */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:32px; }
+.stat-card {
+  background: linear-gradient(135deg, var(--navy-mid), var(--navy-light));
+  border:1px solid rgba(201,168,76,0.15); border-radius:16px; padding:24px;
+  position:relative; overflow:hidden; transition:transform 0.2s;
+}
+.stat-card:hover { transform:translateY(-3px); }
+.stat-card::before {
+  content:''; position:absolute; top:-20px; right:-20px;
+  width:80px; height:80px; border-radius:50%;
+  background: radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 70%);
+}
+.stat-icon { font-size:28px; margin-bottom:12px; }
+.stat-value {
+  font-family:'Playfair Display',serif; font-size:28px; font-weight:700;
+  color:var(--gold-light); line-height:1;
+}
+.stat-label { font-size:12px; color:var(--text-muted); margin-top:6px; text-transform:uppercase; letter-spacing:1px; }
+.stat-change { font-size:12px; margin-top:8px; color:var(--green); }
+
+/* TABLES */
+.data-card {
+  background: linear-gradient(135deg, var(--navy-mid), rgba(26,50,84,0.5));
+  border:1px solid rgba(201,168,76,0.15); border-radius:16px;
+  overflow:hidden; margin-bottom:24px;
+}
+.data-card-header {
+  padding:20px 24px; border-bottom:1px solid rgba(201,168,76,0.1);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+}
+.data-card-title { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--cream); }
+.data-card-body { padding:0; overflow-x:auto; }
+
+table { width:100%; border-collapse:collapse; }
+th {
+  padding:14px 20px; text-align:left;
+  font-size:11px; font-weight:700; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase;
+  background:rgba(201,168,76,0.05); border-bottom:1px solid rgba(201,168,76,0.1);
+}
+td {
+  padding:14px 20px; font-size:14px; color:var(--cream);
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(201,168,76,0.04); }
+
+.badge-status {
+  padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase;
+}
+.badge-active { background:rgba(46,204,113,0.15); color:var(--green); }
+.badge-pending { background:rgba(52,152,219,0.15); color:var(--blue-accent); }
+.badge-overdue { background:rgba(231,76,60,0.15); color:var(--red); }
+.badge-paid { background:rgba(46,204,113,0.15); color:var(--green); }
+
+/* BUTTONS */
+.btn-sm {
+  padding:7px 16px; border-radius:8px; border:none; cursor:pointer;
+  font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600;
+  transition:all 0.2s; display:inline-flex; align-items:center; gap:6px;
+}
+.btn-gold { background:rgba(201,168,76,0.15); color:var(--gold); border:1px solid rgba(201,168,76,0.3); }
+.btn-gold:hover { background:rgba(201,168,76,0.25); }
+.btn-danger { background:rgba(231,76,60,0.15); color:var(--red); border:1px solid rgba(231,76,60,0.3); }
+.btn-danger:hover { background:rgba(231,76,60,0.25); }
+.btn-success { background:rgba(46,204,113,0.15); color:var(--green); border:1px solid rgba(46,204,113,0.3); }
+.btn-success:hover { background:rgba(46,204,113,0.25); }
+.btn-info { background:rgba(52,152,219,0.15); color:var(--blue-accent); border:1px solid rgba(52,152,219,0.3); }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:500;
+  display:none; align-items:center; justify-content:center; padding:16px;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.active { display:flex; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal {
+  background: linear-gradient(135deg, var(--navy-mid), var(--navy-light));
+  border:1px solid rgba(201,168,76,0.3); border-radius:20px;
+  width:100%; max-width:500px; max-height:90vh; overflow-y:auto;
+  animation: modalSlide 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modalSlide { from{transform:scale(0.9) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+.modal-header {
+  padding:24px 28px 16px; display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid rgba(201,168,76,0.1);
+}
+.modal-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:var(--gold-light); }
+.modal-close { background:none; border:none; color:var(--text-muted); font-size:24px; cursor:pointer; transition:color 0.2s; }
+.modal-close:hover { color:var(--cream); }
+.modal-body { padding:24px 28px; }
+.modal-footer { padding:16px 28px 24px; display:flex; gap:12px; justify-content:flex-end; }
+
+/* FORMS in modals */
+.modal .form-group { margin-bottom:16px; }
+.modal .form-group label { font-size:11px; font-weight:700; color:var(--gold); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; display:block; }
+.modal .form-group input,
+.modal .form-group select,
+.modal .form-group textarea {
+  width:100%; padding:12px 14px;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(201,168,76,0.2);
+  border-radius:10px; color:var(--cream); font-family:'DM Sans',sans-serif; font-size:14px;
+  transition:all 0.3s; outline:none;
+}
+.modal .form-group input:focus,
+.modal .form-group select:focus { border-color:var(--gold); background:rgba(201,168,76,0.08); }
+.modal .form-group select option { background:var(--navy-mid); }
+.modal .form-group textarea { resize:vertical; min-height:80px; }
+
+/* TOAST */
+#toast-container { position:fixed; bottom:24px; right:24px; z-index:9000; display:flex; flex-direction:column; gap:10px; }
+.toast {
+  padding:14px 20px; border-radius:12px; font-size:14px; font-weight:500;
+  min-width:280px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  animation: toastIn 0.3s ease; display:flex; align-items:center; gap:10px;
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+.toast.success { background:rgba(46,204,113,0.95); color:#fff; }
+.toast.error { background:rgba(231,76,60,0.95); color:#fff; }
+.toast.info { background:rgba(52,152,219,0.95); color:#fff; }
+
+/* MOBILE TOGGLE */
+.mobile-menu-btn {
+  display:none; position:fixed; top:16px; left:16px; z-index:200;
+  width:44px; height:44px; background:var(--navy-mid); border:1px solid rgba(201,168,76,0.3);
+  border-radius:10px; align-items:center; justify-content:center; cursor:pointer; font-size:20px;
+}
+
+/* GRID 2COL */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+
+/* FORM ROW */
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* SEARCH */
+.search-box {
+  position:relative;
+}
+.search-box input {
+  padding:10px 16px 10px 40px;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(201,168,76,0.2);
+  border-radius:10px; color:var(--cream); font-family:'DM Sans',sans-serif; font-size:14px;
+  outline:none; transition:all 0.3s; width:240px;
+}
+.search-box input:focus { border-color:var(--gold); width:300px; }
+.search-box::before {
+  content:'🔍'; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px;
+}
+
+/* AMOUNT DISPLAY */
+.amount-positive { color:var(--green); font-weight:600; }
+.amount-negative { color:var(--red); font-weight:600; }
+.amount-gold { color:var(--gold); font-weight:700; }
+
+/* RESPONSIVE */
+@media (max-width:768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .main-content { margin-left:0; padding:16px; padding-top:70px; }
+  .mobile-menu-btn { display:flex; }
+  .grid-2 { grid-template-columns:1fr; }
+  .form-row { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:480px) {
+  .stats-grid { grid-template-columns:1fr; }
+}
+
+/* GITHUB CONFIG */
+.github-config-notice {
+  background:rgba(52,152,219,0.1); border:1px solid rgba(52,152,219,0.3);
+  border-radius:12px; padding:16px 20px; margin-bottom:24px;
+  display:flex; align-items:flex-start; gap:12px; font-size:13px; color:var(--blue-accent);
+}
+
+/* PROFILE SECTION */
+.profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+
+/* ABOUT page */
+.info-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.info-label { color:var(--text-muted); font-size:13px; }
+.info-value { color:var(--cream); font-size:13px; font-weight:600; }
+
+/* Animated number */
+.animated-num { transition:all 0.5s ease; }
+
+/* Share progress bar */
+.share-bar { height:8px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden; margin-top:6px; }
+.share-fill { height:100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold-light)); border-radius:4px; transition:width 1s ease; }
+
+/* OVERVIEW CHART */
+.mini-chart { display:flex; align-items:flex-end; gap:4px; height:60px; }
+.bar { flex:1; background: linear-gradient(0deg, var(--gold-dark), var(--gold-light)); border-radius:3px 3px 0 0; min-width:8px; opacity:0.7; transition:opacity 0.2s; }
+.bar:hover { opacity:1; }
+
+</style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="logo-anim">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="logo-icon" style="width:100px;height:100px;font-size:48px;border-radius:24px;margin-bottom:16px">🏛️</div>
+      <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:900;background:linear-gradient(135deg,#C9A84C,#E8C97A);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Dhelana Youth Bank</div>
+      <div style="font-size:11px;letter-spacing:4px;color:#8A9BB0;text-transform:uppercase;margin-top:4px">Empowering Young India</div>
+    </div>
+  </div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <p>Loading Your Bank...</p>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- LOGIN PAGE -->
+  <div id="login-page" class="section" style="display:flex">
+    <div class="login-card">
+      <div class="bank-logo">
+        <div class="logo-icon">🏛️</div>
+        <div class="bank-name">Dhelana Youth Bank</div>
+        <div class="bank-tagline">Empowering Young India</div>
+      </div>
+      <div class="login-tabs">
+        <button class="tab-btn active" onclick="switchLoginTab('user')">👤 User Login</button>
+        <button class="tab-btn" onclick="switchLoginTab('admin')">🛡️ Admin Login</button>
+      </div>
+      <div class="form-group">
+        <label>User ID</label>
+        <input type="text" id="login-userid" placeholder="Enter your User ID" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter your password" />
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+      <div class="error-msg" id="login-error">❌ Invalid credentials. Please try again.</div>
+      <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
+        Secured by Dhelana Youth Bank • Version 1.0
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="section" style="display:none">
+    <!-- Mobile toggle -->
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon-sm">🏛️</div>
+        <div>
+          <div class="bank-name-sm">Dhelana Youth Bank</div>
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">EMPOWERING YOUNG INDIA</div>
+        </div>
+      </div>
+      <div class="sidebar-nav" id="sidebar-nav">
+        <!-- Filled by JS -->
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info-bar">
+          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div class="user-details">
+            <div class="user-name" id="sidebar-username">Loading...</div>
+            <div class="user-role" id="sidebar-role">User</div>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">🚪 Sign Out</button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="main-content">
+      <!-- Pages loaded here -->
+    </div>
+  </div>
+
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Modal</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script>
+// ============================================================
+// GITHUB DATA STORE CONFIG
+// ============================================================
+// TO USE: Set your GitHub token, repo owner, repo name, and file path below.
+// The token needs "repo" scope. Store data as a JSON file in your repo.
+// ============================================================
+const GITHUB_CONFIG = {
+  token: '',          // YOUR GitHub Personal Access Token (Settings > Developer > Tokens)
+  owner: '',          // GitHub username or org
+  repo: '',           // Repository name
+  path: 'bank-data.json',   // File path in repo
+  branch: 'main'
+};
+
+let DB = null; // Loaded from GitHub or localStorage fallback
+let currentUser = null;
+let currentRole = null; // 'admin' | 'user'
+let currentTab = 'user';
+let activePage = 'overview';
+
+// ============================================================
+// PARTICLES
+// ============================================================
+(function(){
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  for(let i=0;i<60;i++) particles.push({
+    x:Math.random()*2000, y:Math.random()*1200,
+    r:Math.random()*2+0.5,
+    vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3,
+    alpha:Math.random()*0.5+0.2
+  });
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(201,168,76,${p.alpha})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ============================================================
+// LOADER
+// ============================================================
+window.addEventListener('load', async ()=>{
+  await loadDB();
+  setTimeout(()=>{
+    const loader = document.getElementById('loader');
+    loader.style.opacity = '0';
+    setTimeout(()=>{ loader.style.display='none'; }, 800);
+  }, 2200);
+});
+
+// ============================================================
+// DATA LAYER - GitHub + localStorage fallback
+// ============================================================
+function defaultDB(){
+  return {
+    settings: { bankName:'Dhelana Youth Bank', sharePrice:500, maxSharesPerUser:100, penaltyRate:2, interestRate:12, loanTenureMonths:12 },
+    admins: [{ id:'ADMIN001', password:'admin123', name:'Bank Admin', createdAt: new Date().toISOString() }],
+    users: [
+      { id:'USR001', password:'pass123', name:'Arjun Patel', shares:10, balance:0, joinDate:'2025-01-01', phone:'9876543210', status:'active' },
+      { id:'USR002', password:'pass456', name:'Priya Shah', shares:5, balance:0, joinDate:'2025-01-15', phone:'9876500001', status:'active' }
+    ],
+    transactions: [],
+    loans: [],
+    penalties: [],
+    sharePayments: [],
+    monthlyPayments: []
+  };
+}
+
+async function loadDB(){
+  if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
+    try {
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
+        headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if(res.ok){
+        const data = await res.json();
+        DB = JSON.parse(atob(data.content));
+        DB._sha = data.sha;
+        return;
+      }
+    } catch(e){ console.log('GitHub load failed, using localStorage'); }
+  }
+  // Fallback: localStorage
+  const saved = localStorage.getItem('dhelana_bank_db');
+  DB = saved ? JSON.parse(saved) : defaultDB();
+  // Ensure all fields exist (merge defaults)
+  const def = defaultDB();
+  if(!DB.settings) DB.settings = def.settings;
+  else DB.settings = Object.assign({}, def.settings, DB.settings);
+  if(!DB.admins) DB.admins = def.admins;
+  if(!DB.users) DB.users = def.users;
+  if(!DB.transactions) DB.transactions = [];
+  if(!DB.loans) DB.loans = [];
+  if(!DB.penalties) DB.penalties = [];
+  if(!DB.sharePayments) DB.sharePayments = [];
+  if(!DB.monthlyPayments) DB.monthlyPayments = [];
+}
+
+async function saveDB(){
+  const sha = DB._sha;
+  const payload = {...DB}; delete payload._sha;
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+  if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
+    try {
+      const body = {
+        message: `Bank data update ${new Date().toISOString()}`,
+        content,
+        branch: GITHUB_CONFIG.branch
+      };
+      if(sha) body.sha = sha;
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
+        method:'PUT', headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' },
+        body: JSON.stringify(body)
+      });
+      if(res.ok){
+        const d = await res.json();
+        DB._sha = d.content.sha;
+        toast('Data saved to GitHub ✓', 'success');
+        return;
+      }
+    } catch(e){ console.log('GitHub save failed'); }
+  }
+  // Fallback localStorage
+  localStorage.setItem('dhelana_bank_db', JSON.stringify(payload));
+  toast('Data saved locally ✓', 'success');
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function switchLoginTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=> b.classList.toggle('active', (tab==='user'&&i===0)||(tab==='admin'&&i===1)));
+}
+
+function doLogin(){
+  const id = document.getElementById('login-userid').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if(!id||!pw){ showError('Please enter User ID and Password'); return; }
+
+  if(currentTab==='admin'){
+    const admin = DB.admins.find(a=>a.id===id && a.password===pw);
+    if(!admin){ showError('Invalid admin credentials'); return; }
+    currentUser = admin; currentRole = 'admin';
+  } else {
+    const user = DB.users.find(u=>u.id===id && u.password===pw);
+    if(!user){ showError('Invalid user credentials'); return; }
+    if(user.status==='inactive'){ showError('Account is inactive. Contact admin.'); return; }
+    currentUser = user; currentRole = 'user';
+  }
+  openDashboard();
+}
+
+function showError(msg){
+  const e = document.getElementById('login-error');
+  e.textContent = '❌ '+msg; e.style.display='block';
+}
+
+function doLogout(){
+  currentUser=null; currentRole=null;
+  document.getElementById('login-userid').value='';
+  document.getElementById('login-password').value='';
+  showSection('login-page');
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function openDashboard(){
+  showSection('dashboard');
+  document.getElementById('sidebar-username').textContent = currentUser.name;
+  document.getElementById('sidebar-role').textContent = currentRole.toUpperCase();
+  document.getElementById('sidebar-avatar').textContent = currentUser.name[0];
+  buildNav();
+  navigate('overview');
+}
+
+function buildNav(){
+  const nav = document.getElementById('sidebar-nav');
+  const isAdmin = currentRole==='admin';
+  const items = isAdmin ? [
+    { section:'OVERVIEW', items:[{id:'overview',icon:'📊',label:'Dashboard'}] },
+    { section:'USER MANAGEMENT', items:[
+      {id:'users',icon:'👥',label:'All Members'},
+      {id:'add-user',icon:'➕',label:'Add Member'},
+    ]},
+    { section:'FINANCIAL', items:[
+      {id:'shares',icon:'📈',label:'Share Management'},
+      {id:'loans',icon:'💳',label:'Loans'},
+      {id:'penalties',icon:'⚠️',label:'Penalties'},
+      {id:'transactions',icon:'💸',label:'Transactions'},
+      {id:'monthly',icon:'📅',label:'Monthly Payments'},
+    ]},
+    { section:'SETTINGS', items:[
+      {id:'admin-settings',icon:'⚙️',label:'Bank Settings'},
+      {id:'admin-profile',icon:'🔐',label:'My Profile'},
+      {id:'github-config',icon:'🐙',label:'GitHub Config'},
+    ]}
+  ] : [
+    { section:'MY ACCOUNT', items:[
+      {id:'overview',icon:'🏠',label:'My Dashboard'},
+      {id:'my-shares',icon:'📈',label:'My Shares'},
+      {id:'my-loans',icon:'💳',label:'My Loans'},
+      {id:'apply-loan',icon:'🏦',label:'Apply for Loan'},
+      {id:'my-penalties',icon:'⚠️',label:'My Penalties'},
+      {id:'my-transactions',icon:'💸',label:'Transaction History'},
+    ]},
+    { section:'ACCOUNT', items:[
+      {id:'user-profile',icon:'👤',label:'My Profile'},
+    ]}
+  ];
+  nav.innerHTML = items.map(section=>`
+    <div class="nav-section-label">${section.section}</div>
+    ${section.items.map(item=>`
+      <div class="nav-item" id="nav-${item.id}" onclick="navigate('${item.id}')">
+        <span class="nav-icon">${item.icon}</span> ${item.label}
+      </div>
+    `).join('')}
+  `).join('');
+}
+
+function navigate(page){
+  activePage = page;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+page);
+  if(navEl) navEl.classList.add('active');
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = renderPage(page);
+  initPage(page);
+  // Close sidebar on mobile
+  if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+
+function showSection(id){
+  // Hide all sections explicitly
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'none';
+  // Show the target
+  const el = document.getElementById(id);
+  if(id === 'login-page') {
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'block';
+  }
+}
+
+// ============================================================
+// PAGE RENDERERS
+// ============================================================
+function renderPage(page){
+  switch(page){
+    case 'overview': return currentRole==='admin' ? renderAdminOverview() : renderUserOverview();
+    case 'users': return renderUsers();
+    case 'add-user': return renderAddUser();
+    case 'shares': return renderAdminShares();
+    case 'loans': return renderAdminLoans();
+    case 'penalties': return renderAdminPenalties();
+    case 'transactions': return renderAdminTransactions();
+    case 'monthly': return renderMonthlyPayments();
+    case 'admin-settings': return renderAdminSettings();
+    case 'admin-profile': return renderAdminProfile();
+    case 'github-config': return renderGithubConfig();
+    case 'my-shares': return renderUserShares();
+    case 'my-loans': return renderUserLoans();
+    case 'apply-loan': return renderApplyLoan();
+    case 'my-penalties': return renderUserPenalties();
+    case 'my-transactions': return renderUserTransactions();
+    case 'user-profile': return renderUserProfile();
+    default: return '<div class="page-header"><h1 class="page-title">Coming Soon</h1></div>';
+  }
+}
+
+function initPage(page){
+  // Animate stat numbers
+  document.querySelectorAll('.animated-num').forEach(el=>{
+    const target = parseFloat(el.dataset.target||0);
+    let cur=0; const step = target/50;
+    const iv = setInterval(()=>{
+      cur = Math.min(cur+step, target);
+      el.textContent = el.dataset.prefix + formatNum(Math.round(cur)) + (el.dataset.suffix||'');
+      if(cur>=target) clearInterval(iv);
+    },20);
+  });
+  // Animate share bars
+  setTimeout(()=>{
+    document.querySelectorAll('.share-fill').forEach(el=>{
+      el.style.width = el.dataset.width+'%';
+    });
+  }, 100);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function formatNum(n){ return n.toLocaleString('en-IN'); }
+function formatCur(n){ return '₹'+formatNum(n); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function now(){ return new Date().toISOString(); }
+function uuid(){ return 'ID'+Date.now().toString(36).toUpperCase(); }
+
+function totalShares(userId){
+  // Sum all share assignments
+  const user = DB.users.find(u=>u.id===userId);
+  return user ? (user.shares||0) : 0;
+}
+function userShareValue(userId){ return totalShares(userId) * DB.settings.sharePrice; }
+
+function totalPenalty(userId){
+  return DB.penalties.filter(p=>p.userId===userId&&p.status!=='paid').reduce((a,b)=>a+b.amount,0);
+}
+function totalLoanPending(userId){
+  return DB.loans.filter(l=>l.userId===userId&&l.status==='active').reduce((a,b)=>a+(b.amount-b.paid),0);
+}
+
+// ============================================================
+// ADMIN OVERVIEW
+// ============================================================
+function renderAdminOverview(){
+  const totalUsers = DB.users.length;
+  const activeUsers = DB.users.filter(u=>u.status==='active').length;
+  const totalSharesAll = DB.users.reduce((a,u)=>a+(u.shares||0),0);
+  const totalShareValue = totalSharesAll * DB.settings.sharePrice;
+  const totalLoanAmt = DB.loans.filter(l=>l.status==='active').reduce((a,l)=>a+(l.amount-l.paid),0);
+  const totalPenaltyAmt = DB.penalties.filter(p=>p.status!=='paid').reduce((a,p)=>a+p.amount,0);
+  const githubConfigured = !!(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo);
+
+  return `
+  <div class="page-header">
+    <div class="page-title">Admin Dashboard</div>
+    <div class="page-subtitle">Welcome back, ${currentUser.name} • ${new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+  </div>
+  ${!githubConfigured ? `<div class="github-config-notice">⚠️ <div><strong>GitHub not configured!</strong> Data is saved to browser storage only. <a href="#" onclick="navigate('github-config')" style="color:var(--gold)">Configure GitHub →</a> to persist data across devices.</div></div>` : ''}
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value animated-num" data-target="${totalUsers}" data-prefix="">0</div><div class="stat-label">Total Members</div><div class="stat-change">✅ ${activeUsers} Active</div></div>
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-value animated-num" data-target="${totalSharesAll}" data-prefix="">0</div><div class="stat-label">Total Shares Issued</div><div class="stat-change">@ ${formatCur(DB.settings.sharePrice)}/share</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value animated-num" data-target="${totalShareValue}" data-prefix="₹">₹0</div><div class="stat-label">Total Share Capital</div></div>
+    <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-value animated-num" data-target="${totalLoanAmt}" data-prefix="₹">₹0</div><div class="stat-label">Active Loan Balance</div><div class="stat-change" style="color:var(--red)">Outstanding</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value animated-num" data-target="${totalPenaltyAmt}" data-prefix="₹">₹0</div><div class="stat-label">Pending Penalties</div></div>
+    <div class="stat-card"><div class="stat-icon">🏦</div><div class="stat-value">${formatCur(DB.settings.sharePrice)}</div><div class="stat-label">Share Price</div></div>
+  </div>
+
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Recent Members</div><button class="btn-sm btn-gold" onclick="navigate('users')">View All</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Member ID</th><th>Name</th><th>Shares</th><th>Share Value</th><th>Loan</th><th>Penalty</th><th>Status</th></tr></thead>
+        <tbody>
+          ${DB.users.slice(0,5).map(u=>`<tr>
+            <td style="color:var(--gold);font-weight:600">${u.id}</td>
+            <td>${u.name}</td>
+            <td>${u.shares||0}</td>
+            <td class="amount-gold">${formatCur((u.shares||0)*DB.settings.sharePrice)}</td>
+            <td class="amount-negative">${formatCur(totalLoanPending(u.id))}</td>
+            <td class="amount-negative">${formatCur(totalPenalty(u.id))}</td>
+            <td><span class="badge-status ${u.status==='active'?'badge-active':'badge-overdue'}">${u.status}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Recent Transactions</div></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead>
+        <tbody>
+          ${DB.transactions.slice(-5).reverse().map(t=>{
+            const user = DB.users.find(u=>u.id===t.userId)||{name:'Unknown'};
+            return `<tr>
+              <td style="color:var(--text-muted)">${t.date?.split('T')[0]}</td>
+              <td>${user.name}</td>
+              <td><span class="badge-status ${t.type==='credit'?'badge-active':t.type==='debit'?'badge-overdue':'badge-pending'}">${t.type}</span></td>
+              <td class="${t.type==='credit'?'amount-positive':'amount-negative'}">${formatCur(t.amount)}</td>
+              <td style="color:var(--text-muted)">${t.note||'-'}</td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No transactions yet</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+// ============================================================
+// USER OVERVIEW
+// ============================================================
+function renderUserOverview(){
+  const u = currentUser;
+  const shares = u.shares||0;
+  const shareVal = shares * DB.settings.sharePrice;
+  const loans = DB.loans.filter(l=>l.userId===u.id);
+  const penalties = DB.penalties.filter(p=>p.userId===u.id&&p.status!=='paid');
+  const loanBalance = loans.filter(l=>l.status==='active').reduce((a,l)=>a+(l.amount-l.paid),0);
+  const penaltyTotal = penalties.reduce((a,p)=>a+p.amount,0);
+  const pct = Math.min(100, (shares/(DB.settings.maxSharesPerUser||100))*100);
+
+  return `
+  <div class="page-header">
+    <div class="page-title">My Dashboard</div>
+    <div class="page-subtitle">Welcome, ${u.name} • Member ID: ${u.id}</div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-value animated-num" data-target="${shares}" data-prefix="">0</div><div class="stat-label">My Shares</div>
+      <div class="share-bar"><div class="share-fill" data-width="${pct}" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${pct.toFixed(1)}% of max</div>
+    </div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value animated-num" data-target="${shareVal}" data-prefix="₹">₹0</div><div class="stat-label">Total Share Value</div><div class="stat-change">@ ${formatCur(DB.settings.sharePrice)}/share</div></div>
+    <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-value animated-num" data-target="${loanBalance}" data-prefix="₹">₹0</div><div class="stat-label">Active Loan Balance</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value animated-num" data-target="${penaltyTotal}" data-prefix="₹">₹0</div><div class="stat-label">Pending Penalty</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="data-card">
+      <div class="data-card-header"><div class="data-card-title">Account Details</div></div>
+      <div style="padding:20px">
+        <div class="info-row"><span class="info-label">Member ID</span><span class="info-value" style="color:var(--gold)">${u.id}</span></div>
+        <div class="info-row"><span class="info-label">Full Name</span><span class="info-value">${u.name}</span></div>
+        <div class="info-row"><span class="info-label">Join Date</span><span class="info-value">${u.joinDate||'-'}</span></div>
+        <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${u.phone||'-'}</span></div>
+        <div class="info-row"><span class="info-label">Status</span><span class="badge-status ${u.status==='active'?'badge-active':'badge-overdue'}">${u.status}</span></div>
+        <div class="info-row"><span class="info-label">Share Price</span><span class="info-value amount-gold">${formatCur(DB.settings.sharePrice)}</span></div>
+      </div>
+    </div>
+    <div class="data-card">
+      <div class="data-card-header"><div class="data-card-title">Recent Activity</div></div>
+      <div class="data-card-body">
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Amount</th></tr></thead>
+          <tbody>
+            ${DB.transactions.filter(t=>t.userId===u.id).slice(-5).reverse().map(t=>`<tr>
+              <td style="color:var(--text-muted);font-size:12px">${t.date?.split('T')[0]}</td>
+              <td><span class="badge-status ${t.type==='credit'?'badge-active':'badge-overdue'}">${t.type}</span></td>
+              <td class="${t.type==='credit'?'amount-positive':'amount-negative'}">${formatCur(t.amount)}</td>
+            </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px">No activity yet</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+// ============================================================
+// ADMIN - USERS
+// ============================================================
+function renderUsers(){
+  return `
+  <div class="page-header">
+    <div class="page-title">All Members</div>
+    <div class="page-subtitle">${DB.users.length} registered members</div>
+  </div>
+  <div class="data-card">
+    <div class="data-card-header">
+      <div class="data-card-title">Member List</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="search-box"><input type="text" placeholder="Search members..." oninput="filterUsers(this.value)" id="user-search" /></div>
+        <button class="btn-sm btn-gold" onclick="navigate('add-user')">➕ Add Member</button>
+      </div>
+    </div>
+    <div class="data-card-body" id="users-table-wrap">
+      ${renderUsersTable(DB.users)}
+    </div>
+  </div>
+  `;
+}
+
+function renderUsersTable(users){
+  return `<table>
+    <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Shares</th><th>Share Value</th><th>Loan</th><th>Penalty</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+      ${users.map(u=>`<tr>
+        <td style="color:var(--gold);font-weight:700">${u.id}</td>
+        <td>${u.name}</td>
+        <td style="color:var(--text-muted)">${u.phone||'-'}</td>
+        <td>${u.shares||0}</td>
+        <td class="amount-gold">${formatCur((u.shares||0)*DB.settings.sharePrice)}</td>
+        <td class="amount-negative">${formatCur(totalLoanPending(u.id))}</td>
+        <td class="amount-negative">${formatCur(totalPenalty(u.id))}</td>
+        <td><span class="badge-status ${u.status==='active'?'badge-active':'badge-overdue'}">${u.status}</span></td>
+        <td>
+          <button class="btn-sm btn-gold" onclick="editUser('${u.id}')">✏️ Edit</button>
+          <button class="btn-sm btn-info" onclick="setShares('${u.id}')">📈 Shares</button>
+          <button class="btn-sm ${u.status==='active'?'btn-danger':'btn-success'}" onclick="toggleUser('${u.id}')">${u.status==='active'?'🔒 Deactivate':'✅ Activate'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px">No members found</td></tr>'}
+    </tbody>
+  </table>`;
+}
+
+function filterUsers(q){
+  const filtered = DB.users.filter(u=>u.name.toLowerCase().includes(q.toLowerCase())||u.id.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('users-table-wrap').innerHTML = renderUsersTable(filtered);
+}
+
+function editUser(id){
+  const u = DB.users.find(u=>u.id===id);
+  if(!u) return;
+  openModal('Edit Member', `
+    <div class="form-row">
+      <div class="form-group"><label>Member ID</label><input id="eu-id" value="${u.id}" readonly style="opacity:0.6" /></div>
+      <div class="form-group"><label>Full Name</label><input id="eu-name" value="${u.name}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input id="eu-phone" value="${u.phone||''}" /></div>
+      <div class="form-group"><label>Join Date</label><input type="date" id="eu-joindate" value="${u.joinDate||''}" /></div>
+    </div>
+    <div class="form-group"><label>New Password (leave blank to keep)</label><input type="password" id="eu-pw" placeholder="New password..." /></div>
+  `, [
+    { label:'Save Changes', cls:'btn-primary', action:`saveEditUser('${id}')` }
+  ]);
+}
+
+function saveEditUser(id){
+  const u = DB.users.find(u=>u.id===id);
+  if(!u) return;
+  u.name = document.getElementById('eu-name').value.trim() || u.name;
+  u.phone = document.getElementById('eu-phone').value.trim();
+  u.joinDate = document.getElementById('eu-joindate').value;
+  const newPw = document.getElementById('eu-pw').value;
+  if(newPw) u.password = newPw;
+  saveDB();
+  closeModal(); navigate('users');
+}
+
+function setShares(id){
+  const u = DB.users.find(u=>u.id===id);
+  if(!u) return;
+  openModal(`Set Shares — ${u.name}`, `
+    <div class="info-row"><span class="info-label">Current Shares</span><span class="info-value amount-gold">${u.shares||0}</span></div>
+    <div class="info-row" style="margin-bottom:16px"><span class="info-label">Current Value</span><span class="info-value">${formatCur((u.shares||0)*DB.settings.sharePrice)}</span></div>
+    <div class="form-group"><label>New Share Count</label><input type="number" id="ss-shares" value="${u.shares||0}" min="0" max="${DB.settings.maxSharesPerUser||100}" /></div>
+    <div style="font-size:12px;color:var(--text-muted)">Share price: ${formatCur(DB.settings.sharePrice)} | Max: ${DB.settings.maxSharesPerUser||100} shares</div>
+  `, [{ label:'Update Shares', cls:'btn-primary', action:`saveShares('${id}')` }]);
+}
+
+function saveShares(id){
+  const u = DB.users.find(u=>u.id===id);
+  if(!u) return;
+  const val = parseInt(document.getElementById('ss-shares').value)||0;
+  if(val < 0){ toast('Shares cannot be negative','error'); return; }
+  if(val > (DB.settings.maxSharesPerUser||100)){ toast('Exceeds max shares allowed','error'); return; }
+  const diff = val - (u.shares||0);
+  u.shares = val;
+  // Log transaction
+  DB.transactions.push({ id:uuid(), userId:id, type: diff>=0?'credit':'debit', amount:Math.abs(diff)*DB.settings.sharePrice, note:`Share ${diff>=0?'increase':'decrease'}: ${Math.abs(diff)} shares`, date:now() });
+  saveDB(); closeModal(); navigate('users');
+}
+
+function toggleUser(id){
+  const u = DB.users.find(u=>u.id===id);
+  if(!u) return;
+  u.status = u.status==='active'?'inactive':'active';
+  saveDB(); navigate('users');
+  toast(`Member ${u.status==='active'?'activated':'deactivated'}`, u.status==='active'?'success':'info');
+}
+
+function deleteUser(id){
+  if(!confirm('Delete this member? All their data will remain for records.')) return;
+  DB.users = DB.users.filter(u=>u.id!==id);
+  saveDB(); navigate('users');
+  toast('Member removed','info');
+}
+
+// ============================================================
+// ADD USER
+// ============================================================
+function renderAddUser(){
+  return `
+  <div class="page-header"><div class="page-title">Add New Member</div><div class="page-subtitle">Register a new bank member</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Member Details</div></div>
+    <div style="padding:28px">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name</label><input id="au-name" placeholder="Enter full name" /></div>
+        <div class="form-group"><label>Phone Number</label><input id="au-phone" placeholder="10-digit mobile" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>User ID (login)</label><input id="au-id" placeholder="e.g. USR003" /></div>
+        <div class="form-group"><label>Password</label><input type="password" id="au-pw" placeholder="Set initial password" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Initial Shares</label><input type="number" id="au-shares" value="1" min="0" /></div>
+        <div class="form-group"><label>Join Date</label><input type="date" id="au-join" value="${today()}" /></div>
+      </div>
+      <button class="btn-primary" style="max-width:200px;margin-top:8px" onclick="addUser()">➕ Add Member</button>
+    </div>
+  </div>
+  `;
+}
+
+function addUser(){
+  const name = document.getElementById('au-name').value.trim();
+  const phone = document.getElementById('au-phone').value.trim();
+  const id = document.getElementById('au-id').value.trim().toUpperCase();
+  const pw = document.getElementById('au-pw').value;
+  const shares = parseInt(document.getElementById('au-shares').value)||0;
+  const join = document.getElementById('au-join').value;
+  if(!name||!id||!pw){ toast('Name, User ID and Password are required','error'); return; }
+  if(DB.users.find(u=>u.id===id)||DB.admins.find(a=>a.id===id)){ toast('User ID already exists','error'); return; }
+  DB.users.push({ id, password:pw, name, phone, shares, joinDate:join, status:'active' });
+  if(shares>0) DB.transactions.push({ id:uuid(), userId:id, type:'credit', amount:shares*DB.settings.sharePrice, note:`Initial share purchase: ${shares} shares`, date:now() });
+  saveDB(); navigate('users');
+  toast(`Member ${name} added successfully!`,'success');
+}
+
+// ============================================================
+// ADMIN - SHARES
+// ============================================================
+function renderAdminShares(){
+  return `
+  <div class="page-header"><div class="page-title">Share Management</div><div class="page-subtitle">Manage member share allocations</div></div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-value">${DB.users.reduce((a,u)=>a+(u.shares||0),0)}</div><div class="stat-label">Total Shares Issued</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">${formatCur(DB.users.reduce((a,u)=>a+(u.shares||0),0)*DB.settings.sharePrice)}</div><div class="stat-label">Total Share Capital</div></div>
+    <div class="stat-card"><div class="stat-icon">💎</div><div class="stat-value">${formatCur(DB.settings.sharePrice)}</div><div class="stat-label">Share Price</div></div>
+    <div class="stat-card"><div class="stat-icon">🔢</div><div class="stat-value">${DB.settings.maxSharesPerUser||100}</div><div class="stat-label">Max Shares/Member</div></div>
+  </div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Member Share Status</div></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Shares</th><th>Share Value</th><th>% of Max</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${DB.users.map(u=>{
+            const pct = Math.min(100,((u.shares||0)/(DB.settings.maxSharesPerUser||100))*100);
+            return `<tr>
+              <td style="color:var(--gold);font-weight:700">${u.id}</td>
+              <td>${u.name}</td>
+              <td><strong>${u.shares||0}</strong></td>
+              <td class="amount-gold">${formatCur((u.shares||0)*DB.settings.sharePrice)}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="share-bar" style="width:80px"><div class="share-fill" data-width="${pct}" style="width:0%"></div></div>
+                  <span style="font-size:12px">${pct.toFixed(0)}%</span>
+                </div>
+              </td>
+              <td><button class="btn-sm btn-gold" onclick="setShares('${u.id}')">✏️ Set Shares</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Share Payment Records</div><button class="btn-sm btn-gold" onclick="addSharePayment()">➕ Record Payment</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Date</th><th>Member</th><th>Shares</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          ${DB.sharePayments.slice(-10).reverse().map(p=>{
+            const u = DB.users.find(u=>u.id===p.userId)||{name:'Unknown'};
+            return `<tr>
+              <td style="color:var(--text-muted)">${p.date?.split('T')[0]}</td>
+              <td>${u.name}</td>
+              <td>${p.shares}</td>
+              <td class="amount-gold">${formatCur(p.amount)}</td>
+              <td><span class="badge-status badge-paid">Recorded</span></td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No share payments recorded</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function addSharePayment(){
+  openModal('Record Share Payment', `
+    <div class="form-group"><label>Select Member</label><select id="sp-user">
+      ${DB.users.map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('')}
+    </select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Number of Shares</label><input type="number" id="sp-shares" min="1" value="1" /></div>
+      <div class="form-group"><label>Amount Paid</label><input type="number" id="sp-amount" placeholder="Auto-calculates" /></div>
+    </div>
+    <div class="form-group"><label>Payment Date</label><input type="date" id="sp-date" value="${today()}" /></div>
+    <div class="form-group"><label>Note</label><input id="sp-note" placeholder="Optional note" /></div>
+  `, [{ label:'Record Payment', cls:'btn-primary', action:'saveSharePayment()' }]);
+  document.getElementById('sp-shares').oninput = ()=>{
+    const s = parseInt(document.getElementById('sp-shares').value)||0;
+    document.getElementById('sp-amount').value = s * DB.settings.sharePrice;
+  };
+}
+
+function saveSharePayment(){
+  const userId = document.getElementById('sp-user').value;
+  const shares = parseInt(document.getElementById('sp-shares').value)||0;
+  const amount = parseFloat(document.getElementById('sp-amount').value)||0;
+  const date = document.getElementById('sp-date').value;
+  const note = document.getElementById('sp-note').value;
+  if(!shares){ toast('Enter share count','error'); return; }
+  DB.sharePayments.push({ id:uuid(), userId, shares, amount, date:date+'T00:00:00', note });
+  DB.transactions.push({ id:uuid(), userId, type:'credit', amount, note:`Share payment: ${shares} shares. ${note}`, date:date+'T00:00:00' });
+  saveDB(); closeModal(); navigate('shares');
+}
+
+// ============================================================
+// ADMIN - LOANS
+// ============================================================
+function renderAdminLoans(){
+  const activeLoans = DB.loans.filter(l=>l.status==='active');
+  const rate = DB.settings.interestRate || 12;
+  return `
+  <div class="page-header"><div class="page-title">Loan Management</div><div class="page-subtitle">Default interest rate: <strong style="color:var(--gold)">${rate}% per annum</strong> — change in Bank Settings</div></div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-value">${activeLoans.length}</div><div class="stat-label">Active Loans</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">${formatCur(activeLoans.reduce((a,l)=>a+l.amount,0))}</div><div class="stat-label">Total Loaned</div></div>
+    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">${formatCur(activeLoans.reduce((a,l)=>a+(l.amount-l.paid),0))}</div><div class="stat-label">Outstanding Balance</div></div>
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-value">${rate}%</div><div class="stat-label">Interest Rate p.a.</div></div>
+  </div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">All Loans</div><button class="btn-sm btn-gold" onclick="addLoan()">➕ Issue Loan</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Loan ID</th><th>Member</th><th>Amount</th><th>EMI/Month</th><th>Rate</th><th>Paid</th><th>Balance</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${DB.loans.map(l=>{
+            const u = DB.users.find(u=>u.id===l.userId)||{name:'Unknown'};
+            const bal = l.amount - l.paid;
+            return `<tr>
+              <td style="color:var(--gold);font-size:12px;font-weight:700">${l.id}${l.appliedByUser?'<br><span style="font-size:10px;color:var(--blue-accent)">User Applied</span>':''}</td>
+              <td>${u.name}</td>
+              <td class="amount-gold">${formatCur(l.amount)}</td>
+              <td style="color:var(--gold-light);font-weight:600">${l.emi ? formatCur(l.emi) : '—'}<br><span style="font-size:10px;color:var(--text-muted)">${l.tenure||'—'} mo</span></td>
+              <td style="color:var(--text-muted)">${l.interestRate||rate}%</td>
+              <td class="amount-positive">${formatCur(l.paid)}</td>
+              <td class="${bal>0?'amount-negative':'amount-positive'}">${formatCur(bal)}</td>
+              <td style="color:var(--text-muted);font-size:12px">${l.date?.split('T')[0]}</td>
+              <td><span class="badge-status ${l.status==='active'?'badge-pending':'badge-active'}">${l.status}</span></td>
+              <td style="white-space:nowrap">
+                <button class="btn-sm btn-info" onclick="viewLoanDetails('${l.id}')">📋</button>
+                ${l.status==='active'?`<button class="btn-sm btn-success" onclick="recordLoanPayment('${l.id}')">💵 Pay</button>`:''}
+              </td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px">No loans yet</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function addLoan(){
+  const rate = DB.settings.interestRate || 12;
+  const tenure = DB.settings.loanTenureMonths || 12;
+  openModal('Issue New Loan', `
+    <div class="form-group"><label>Select Member</label><select id="nl-user">
+      ${DB.users.filter(u=>u.status==='active').map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('')}
+    </select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="nl-amount" placeholder="Amount" oninput="previewLoanAdmin()" /></div>
+      <div class="form-group"><label>Tenure (Months)</label><input type="number" id="nl-tenure" value="${tenure}" min="1" oninput="previewLoanAdmin()" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Interest Rate (% p.a.)</label><input type="number" id="nl-rate" value="${rate}" step="0.5" oninput="previewLoanAdmin()" /></div>
+      <div class="form-group"><label>Issue Date</label><input type="date" id="nl-date" value="${today()}" /></div>
+    </div>
+    <div class="form-group"><label>Description / Purpose</label><input id="nl-desc" placeholder="Loan purpose..." /></div>
+    <div id="nl-preview" style="margin-top:12px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:14px;display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Monthly EMI</div><div id="nl-emi" style="font-size:18px;font-weight:700;color:var(--gold-light)">—</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Total Interest</div><div id="nl-interest" style="font-size:18px;font-weight:700;color:var(--red)">—</div></div>
+        <div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Total Payable</div><div id="nl-total" style="font-size:18px;font-weight:700;color:var(--cream)">—</div></div>
+      </div>
+    </div>
+  `, [{ label:'Issue Loan', cls:'btn-primary', action:'saveLoan()' }]);
+}
+
+function previewLoanAdmin(){
+  const amount = parseFloat(document.getElementById('nl-amount')?.value)||0;
+  const months = parseInt(document.getElementById('nl-tenure')?.value)||1;
+  const annualRate = parseFloat(document.getElementById('nl-rate')?.value)||0;
+  const preview = document.getElementById('nl-preview');
+  if(!preview) return;
+  if(!amount){ preview.style.display='none'; return; }
+  preview.style.display='block';
+  const r = annualRate / 12 / 100;
+  let emi, totalPayable, totalInterest;
+  if(r===0){ emi=amount/months; totalPayable=amount; totalInterest=0; }
+  else { emi=amount*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1); totalPayable=emi*months; totalInterest=totalPayable-amount; }
+  document.getElementById('nl-emi').textContent = formatCur(Math.ceil(emi));
+  document.getElementById('nl-interest').textContent = formatCur(Math.round(totalInterest));
+  document.getElementById('nl-total').textContent = formatCur(Math.round(totalPayable));
+}
+
+function saveLoan(){
+  const userId = document.getElementById('nl-user').value;
+  const amount = parseFloat(document.getElementById('nl-amount').value)||0;
+  const months = parseInt(document.getElementById('nl-tenure').value)||1;
+  const annualRate = parseFloat(document.getElementById('nl-rate').value)||(DB.settings.interestRate||12);
+  const date = document.getElementById('nl-date').value;
+  const desc = document.getElementById('nl-desc').value;
+  if(!amount){ toast('Enter loan amount','error'); return; }
+  const r = annualRate / 12 / 100;
+  const emi = r===0 ? Math.ceil(amount/months) : Math.ceil(amount*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1));
+  const totalPayable = emi * months;
+  const loanId = 'LN'+Date.now().toString(36).toUpperCase();
+  DB.loans.push({ id:loanId, userId, amount, paid:0, date:date+'T00:00:00', status:'active', desc, tenure:months, emi, totalPayable, interestRate:annualRate });
+  DB.transactions.push({ id:uuid(), userId, type:'debit', amount, note:`Loan issued: ${loanId}. ${desc}`, date:date+'T00:00:00' });
+  saveDB(); closeModal(); navigate('loans');
+  toast(`Loan issued! EMI: ${formatCur(emi)}/month`, 'success');
+}
+
+function viewLoanDetails(loanId){
+  const l = DB.loans.find(l=>l.id===loanId);
+  if(!l) return;
+  const u = DB.users.find(u=>u.id===l.userId)||{name:'Unknown'};
+  const bal = l.amount - l.paid;
+  const pct = Math.min(100,(l.paid/l.amount)*100);
+  openModal(`Loan Details — ${loanId}`, `
+    <div class="info-row"><span class="info-label">Member</span><span class="info-value">${u.name} (${u.id})</span></div>
+    <div class="info-row"><span class="info-label">Loan Amount</span><span class="info-value amount-gold">${formatCur(l.amount)}</span></div>
+    <div class="info-row"><span class="info-label">Monthly EMI</span><span class="info-value" style="color:var(--gold-light)">${l.emi?formatCur(l.emi):'—'}</span></div>
+    <div class="info-row"><span class="info-label">Interest Rate</span><span class="info-value">${l.interestRate||'—'}% p.a.</span></div>
+    <div class="info-row"><span class="info-label">Tenure</span><span class="info-value">${l.tenure||'—'} months</span></div>
+    <div class="info-row"><span class="info-label">Total Payable</span><span class="info-value">${l.totalPayable?formatCur(l.totalPayable):'—'}</span></div>
+    <div class="info-row"><span class="info-label">Amount Paid</span><span class="info-value amount-positive">${formatCur(l.paid)}</span></div>
+    <div class="info-row"><span class="info-label">Balance</span><span class="info-value ${bal>0?'amount-negative':'amount-positive'}">${formatCur(bal)}</span></div>
+    <div class="info-row"><span class="info-label">Purpose</span><span class="info-value" style="color:var(--text-muted)">${l.desc||'—'}</span></div>
+    <div class="info-row"><span class="info-label">Issued On</span><span class="info-value">${l.date?.split('T')[0]}</span></div>
+    <div style="margin-top:16px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Repayment Progress</div>
+      <div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold-dark),var(--green));border-radius:5px;transition:width 1s"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${pct.toFixed(1)}% repaid</div>
+    </div>
+  `, [{ label:'💵 Record Payment', cls:'btn-primary', action:`closeModal();recordLoanPayment('${loanId}')` }]);
+}
+
+function recordLoanPayment(loanId){
+  const loan = DB.loans.find(l=>l.id===loanId);
+  if(!loan) return;
+  const bal = loan.amount - loan.paid;
+  openModal('Record Loan Payment', `
+    <div class="info-row"><span class="info-label">Loan ID</span><span class="info-value amount-gold">${loanId}</span></div>
+    <div class="info-row"><span class="info-label">Outstanding</span><span class="info-value amount-negative">${formatCur(bal)}</span></div>
+    <div class="form-group" style="margin-top:16px"><label>Payment Amount (₹)</label><input type="number" id="lp-amount" placeholder="Amount paid" max="${bal}" /></div>
+    <div class="form-group"><label>Payment Date</label><input type="date" id="lp-date" value="${today()}" /></div>
+  `, [{ label:'Record Payment', cls:'btn-primary', action:`saveLoanPayment('${loanId}')` }]);
+}
+
+function saveLoanPayment(loanId){
+  const loan = DB.loans.find(l=>l.id===loanId);
+  if(!loan) return;
+  const amt = parseFloat(document.getElementById('lp-amount').value)||0;
+  const date = document.getElementById('lp-date').value;
+  if(!amt){ toast('Enter payment amount','error'); return; }
+  loan.paid += amt;
+  if(loan.paid >= loan.amount){ loan.paid = loan.amount; loan.status = 'closed'; }
+  DB.transactions.push({ id:uuid(), userId:loan.userId, type:'credit', amount:amt, note:`Loan payment: ${loanId}`, date:date+'T00:00:00' });
+  saveDB(); closeModal(); navigate('loans');
+  toast('Payment recorded','success');
+}
+
+// ============================================================
+// ADMIN - PENALTIES
+// ============================================================
+function renderAdminPenalties(){
+  return `
+  <div class="page-header"><div class="page-title">Penalty Management</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">All Penalties</div><button class="btn-sm btn-gold" onclick="addPenalty()">➕ Add Penalty</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Member</th><th>Reason</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${DB.penalties.map(p=>{
+            const u = DB.users.find(u=>u.id===p.userId)||{name:'Unknown'};
+            return `<tr>
+              <td>${u.name}</td>
+              <td style="color:var(--text-muted)">${p.reason}</td>
+              <td class="amount-negative">${formatCur(p.amount)}</td>
+              <td style="color:var(--text-muted)">${p.date?.split('T')[0]}</td>
+              <td><span class="badge-status ${p.status==='paid'?'badge-paid':'badge-overdue'}">${p.status}</span></td>
+              <td>
+                ${p.status!=='paid'?`<button class="btn-sm btn-success" onclick="markPenaltyPaid('${p.id}')">✅ Mark Paid</button>`:''}
+                <button class="btn-sm btn-danger" onclick="deletePenalty('${p.id}')">🗑️</button>
+              </td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No penalties</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function addPenalty(){
+  openModal('Add Penalty', `
+    <div class="form-group"><label>Select Member</label><select id="ap-user">
+      ${DB.users.map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('')}
+    </select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Amount (₹)</label><input type="number" id="ap-amount" placeholder="Penalty amount" /></div>
+      <div class="form-group"><label>Date</label><input type="date" id="ap-date" value="${today()}" /></div>
+    </div>
+    <div class="form-group"><label>Reason</label><input id="ap-reason" placeholder="Reason for penalty..." /></div>
+  `, [{ label:'Add Penalty', cls:'btn-primary', action:'savePenalty()' }]);
+}
+
+function savePenalty(){
+  const userId = document.getElementById('ap-user').value;
+  const amount = parseFloat(document.getElementById('ap-amount').value)||0;
+  const date = document.getElementById('ap-date').value;
+  const reason = document.getElementById('ap-reason').value;
+  if(!amount||!reason){ toast('Fill all fields','error'); return; }
+  DB.penalties.push({ id:uuid(), userId, amount, date:date+'T00:00:00', reason, status:'pending' });
+  DB.transactions.push({ id:uuid(), userId, type:'debit', amount, note:`Penalty: ${reason}`, date:date+'T00:00:00' });
+  saveDB(); closeModal(); navigate('penalties');
+  toast('Penalty added','success');
+}
+
+function markPenaltyPaid(id){
+  const p = DB.penalties.find(p=>p.id===id);
+  if(!p) return;
+  p.status='paid';
+  DB.transactions.push({ id:uuid(), userId:p.userId, type:'credit', amount:p.amount, note:`Penalty paid: ${p.reason}`, date:now() });
+  saveDB(); navigate('penalties');
+  toast('Penalty marked as paid','success');
+}
+
+function deletePenalty(id){
+  DB.penalties = DB.penalties.filter(p=>p.id!==id);
+  saveDB(); navigate('penalties');
+}
+
+// ============================================================
+// ADMIN - TRANSACTIONS
+// ============================================================
+function renderAdminTransactions(){
+  return `
+  <div class="page-header"><div class="page-title">All Transactions</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Transaction History</div><button class="btn-sm btn-gold" onclick="addManualTransaction()">➕ Manual Entry</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead>
+        <tbody>
+          ${DB.transactions.slice().reverse().map(t=>{
+            const u = DB.users.find(u=>u.id===t.userId)||{name:'Unknown'};
+            return `<tr>
+              <td style="color:var(--text-muted)">${t.date?.split('T')[0]}</td>
+              <td>${u.name}</td>
+              <td><span class="badge-status ${t.type==='credit'?'badge-active':'badge-overdue'}">${t.type}</span></td>
+              <td class="${t.type==='credit'?'amount-positive':'amount-negative'}">${formatCur(t.amount)}</td>
+              <td style="color:var(--text-muted);font-size:12px">${t.note||'-'}</td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No transactions</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function addManualTransaction(){
+  openModal('Add Manual Transaction', `
+    <div class="form-group"><label>Select Member</label><select id="mt-user">
+      ${DB.users.map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('')}
+    </select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label><select id="mt-type"><option value="credit">Credit (Deposit)</option><option value="debit">Debit (Withdrawal)</option></select></div>
+      <div class="form-group"><label>Amount (₹)</label><input type="number" id="mt-amount" placeholder="Amount" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date</label><input type="date" id="mt-date" value="${today()}" /></div>
+      <div class="form-group"><label>Note</label><input id="mt-note" placeholder="Transaction note..." /></div>
+    </div>
+  `, [{ label:'Add Transaction', cls:'btn-primary', action:'saveManualTransaction()' }]);
+}
+
+function saveManualTransaction(){
+  const userId = document.getElementById('mt-user').value;
+  const type = document.getElementById('mt-type').value;
+  const amount = parseFloat(document.getElementById('mt-amount').value)||0;
+  const date = document.getElementById('mt-date').value;
+  const note = document.getElementById('mt-note').value;
+  if(!amount){ toast('Enter amount','error'); return; }
+  DB.transactions.push({ id:uuid(), userId, type, amount, note, date:date+'T00:00:00' });
+  saveDB(); closeModal(); navigate('transactions');
+  toast('Transaction added','success');
+}
+
+// ============================================================
+// MONTHLY PAYMENTS
+// ============================================================
+function renderMonthlyPayments(){
+  return `
+  <div class="page-header"><div class="page-title">Monthly Payments</div><div class="page-subtitle">Track monthly share/contribution payments</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Monthly Payment Tracker</div><button class="btn-sm btn-gold" onclick="addMonthlyPayment()">➕ Record Payment</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Month</th><th>Member</th><th>Amount</th><th>Date Paid</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${DB.monthlyPayments.slice().reverse().map(mp=>{
+            const u = DB.users.find(u=>u.id===mp.userId)||{name:'Unknown'};
+            return `<tr>
+              <td style="color:var(--gold);font-weight:600">${mp.month}</td>
+              <td>${u.name}</td>
+              <td class="amount-gold">${formatCur(mp.amount)}</td>
+              <td style="color:var(--text-muted)">${mp.paidDate||'-'}</td>
+              <td><span class="badge-status ${mp.status==='paid'?'badge-paid':'badge-overdue'}">${mp.status}</span></td>
+              <td>
+                ${mp.status!=='paid'?`<button class="btn-sm btn-success" onclick="markMonthlyPaid('${mp.id}')">✅ Paid</button>`:''}
+              </td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No monthly payments recorded</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function addMonthlyPayment(){
+  openModal('Record Monthly Payment', `
+    <div class="form-group"><label>Select Member</label><select id="mp-user">
+      ${DB.users.map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('')}
+    </select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Month (YYYY-MM)</label><input type="month" id="mp-month" value="${new Date().toISOString().slice(0,7)}" /></div>
+      <div class="form-group"><label>Amount (₹)</label><input type="number" id="mp-amount" value="${DB.settings.sharePrice}" /></div>
+    </div>
+    <div class="form-group"><label>Status</label><select id="mp-status"><option value="paid">Paid</option><option value="pending">Pending</option></select></div>
+  `, [{ label:'Record', cls:'btn-primary', action:'saveMonthlyPayment()' }]);
+}
+
+function saveMonthlyPayment(){
+  const userId = document.getElementById('mp-user').value;
+  const month = document.getElementById('mp-month').value;
+  const amount = parseFloat(document.getElementById('mp-amount').value)||0;
+  const status = document.getElementById('mp-status').value;
+  DB.monthlyPayments.push({ id:uuid(), userId, month, amount, status, paidDate:status==='paid'?today():null });
+  if(status==='paid') DB.transactions.push({ id:uuid(), userId, type:'credit', amount, note:`Monthly payment: ${month}`, date:now() });
+  saveDB(); closeModal(); navigate('monthly');
+  toast('Monthly payment recorded','success');
+}
+
+function markMonthlyPaid(id){
+  const mp = DB.monthlyPayments.find(m=>m.id===id);
+  if(!mp) return;
+  mp.status='paid'; mp.paidDate=today();
+  DB.transactions.push({ id:uuid(), userId:mp.userId, type:'credit', amount:mp.amount, note:`Monthly payment: ${mp.month}`, date:now() });
+  saveDB(); navigate('monthly');
+  toast('Marked as paid','success');
+}
+
+// ============================================================
+// ADMIN SETTINGS
+// ============================================================
+function renderAdminSettings(){
+  return `
+  <div class="page-header"><div class="page-title">Bank Settings</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">General Settings</div></div>
+    <div style="padding:28px">
+      <div class="form-row">
+        <div class="form-group"><label>Share Price (₹)</label><input type="number" id="set-shareprice" value="${DB.settings.sharePrice}" /></div>
+        <div class="form-group"><label>Max Shares per Member</label><input type="number" id="set-maxshares" value="${DB.settings.maxSharesPerUser||100}" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Penalty Rate (%)</label><input type="number" id="set-penalty" value="${DB.settings.penaltyRate||2}" /></div>
+        <div class="form-group"><label>Bank Name</label><input id="set-bankname" value="${DB.settings.bankName||'Dhelana Youth Bank'}" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Loan Interest Rate (% per year)</label><input type="number" id="set-interest" value="${DB.settings.interestRate||12}" step="0.5" /></div>
+        <div class="form-group"><label>Default Loan Tenure (Months)</label><input type="number" id="set-tenure" value="${DB.settings.loanTenureMonths||12}" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Loan Interest Rate (% per year)</label><input type="number" id="set-interest" value="${DB.settings.interestRate||12}" step="0.5" /></div>
+        <div class="form-group"><label>Default Loan Tenure (months)</label><input type="number" id="set-tenure" value="${DB.settings.loanTenureMonths||12}" /></div>
+      </div>
+      <button class="btn-primary" style="max-width:200px;margin-top:8px" onclick="saveSettings()">💾 Save Settings</button>
+    </div>
+  </div>
+  <div class="data-card" style="margin-top:20px">
+    <div class="data-card-header"><div class="data-card-title">Admin Accounts</div><button class="btn-sm btn-gold" onclick="addAdmin()">➕ Add Admin</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Admin ID</th><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${DB.admins.map(a=>`<tr>
+            <td style="color:var(--gold);font-weight:700">${a.id}</td>
+            <td>${a.name}</td>
+            <td style="color:var(--text-muted)">${a.createdAt?.split('T')[0]||'-'}</td>
+            <td>${DB.admins.length>1?`<button class="btn-sm btn-danger" onclick="deleteAdmin('${a.id}')">🗑️ Remove</button>`:'<span style="color:var(--text-muted);font-size:12px">Primary admin</span>'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function saveSettings(){
+  DB.settings.sharePrice = parseFloat(document.getElementById('set-shareprice').value)||500;
+  DB.settings.maxSharesPerUser = parseInt(document.getElementById('set-maxshares').value)||100;
+  DB.settings.penaltyRate = parseFloat(document.getElementById('set-penalty').value)||2;
+  DB.settings.bankName = document.getElementById('set-bankname').value.trim()||'Dhelana Youth Bank';
+  DB.settings.interestRate = parseFloat(document.getElementById('set-interest').value)||12;
+  DB.settings.loanTenureMonths = parseInt(document.getElementById('set-tenure').value)||12;
+  saveDB(); toast('Settings saved!','success');
+}
+
+function addAdmin(){
+  openModal('Add Admin Account', `
+    <div class="form-row">
+      <div class="form-group"><label>Admin ID</label><input id="aa-id" placeholder="e.g. ADMIN002" /></div>
+      <div class="form-group"><label>Name</label><input id="aa-name" placeholder="Admin name" /></div>
+    </div>
+    <div class="form-group"><label>Password</label><input type="password" id="aa-pw" placeholder="Admin password" /></div>
+  `, [{ label:'Add Admin', cls:'btn-primary', action:'saveAdmin()' }]);
+}
+
+function saveAdmin(){
+  const id = document.getElementById('aa-id').value.trim().toUpperCase();
+  const name = document.getElementById('aa-name').value.trim();
+  const pw = document.getElementById('aa-pw').value;
+  if(!id||!name||!pw){ toast('All fields required','error'); return; }
+  if(DB.admins.find(a=>a.id===id)||DB.users.find(u=>u.id===id)){ toast('ID already exists','error'); return; }
+  DB.admins.push({ id, name, password:pw, createdAt:now() });
+  saveDB(); closeModal(); navigate('admin-settings');
+  toast('Admin added','success');
+}
+
+function deleteAdmin(id){
+  if(!confirm('Remove this admin?')) return;
+  DB.admins = DB.admins.filter(a=>a.id!==id);
+  saveDB(); navigate('admin-settings');
+}
+
+// ============================================================
+// ADMIN PROFILE
+// ============================================================
+function renderAdminProfile(){
+  const a = currentUser;
+  return `
+  <div class="page-header"><div class="page-title">My Profile</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Change Credentials</div></div>
+    <div style="padding:28px">
+      <div class="form-group"><label>Admin Name</label><input id="ap-name" value="${a.name}" /></div>
+      <div class="form-group"><label>Current User ID</label><input id="ap-id-old" value="${a.id}" readonly style="opacity:0.6" /></div>
+      <div class="form-group"><label>New User ID (leave blank to keep)</label><input id="ap-id-new" placeholder="New User ID..." /></div>
+      <div class="form-group"><label>New Password (leave blank to keep)</label><input type="password" id="ap-pw" placeholder="New password..." /></div>
+      <button class="btn-primary" style="max-width:200px;margin-top:8px" onclick="saveAdminProfile()">💾 Update Profile</button>
+    </div>
+  </div>
+  `;
+}
+
+function saveAdminProfile(){
+  const name = document.getElementById('ap-name').value.trim();
+  const newId = document.getElementById('ap-id-new').value.trim().toUpperCase();
+  const newPw = document.getElementById('ap-pw').value;
+  const admin = DB.admins.find(a=>a.id===currentUser.id);
+  if(!admin) return;
+  if(name) admin.name = name;
+  if(newId){
+    if(DB.admins.find(a=>a.id===newId&&a.id!==currentUser.id)||DB.users.find(u=>u.id===newId)){ toast('ID already taken','error'); return; }
+    admin.id = newId;
+  }
+  if(newPw) admin.password = newPw;
+  currentUser = admin;
+  document.getElementById('sidebar-username').textContent = admin.name;
+  document.getElementById('sidebar-avatar').textContent = admin.name[0];
+  saveDB(); toast('Profile updated!','success');
+}
+
+// ============================================================
+// GITHUB CONFIG PAGE
+// ============================================================
+function renderGithubConfig(){
+  return `
+  <div class="page-header"><div class="page-title">GitHub Data Storage</div><div class="page-subtitle">Configure GitHub to persist data across devices</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Setup Instructions</div></div>
+    <div style="padding:28px">
+      <div style="background:rgba(52,152,219,0.08);border:1px solid rgba(52,152,219,0.2);border-radius:12px;padding:20px;margin-bottom:24px;font-size:13px;line-height:1.8;color:var(--cream)">
+        <strong style="color:var(--gold)">📋 How to configure GitHub storage:</strong><br>
+        1. Create a GitHub account at <strong>github.com</strong><br>
+        2. Create a new <strong>private repository</strong> (e.g., <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">dhelana-bank-data</code>)<br>
+        3. Go to <strong>Settings → Developer Settings → Personal Access Tokens → Tokens (classic)</strong><br>
+        4. Generate a token with <strong>"repo"</strong> scope checked<br>
+        5. Copy the token and paste it below (it will only be stored in your browser)<br>
+        6. Click <strong>Save & Test</strong>
+      </div>
+      <div class="form-group"><label>GitHub Personal Access Token</label><input type="password" id="gh-token" value="${GITHUB_CONFIG.token}" placeholder="ghp_xxxxxxxxxxxx..." /></div>
+      <div class="form-row">
+        <div class="form-group"><label>GitHub Username (Owner)</label><input id="gh-owner" value="${GITHUB_CONFIG.owner}" placeholder="your-username" /></div>
+        <div class="form-group"><label>Repository Name</label><input id="gh-repo" value="${GITHUB_CONFIG.repo}" placeholder="dhelana-bank-data" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Branch</label><input id="gh-branch" value="${GITHUB_CONFIG.branch||'main'}" placeholder="main" /></div>
+        <div class="form-group"><label>Data File Path</label><input id="gh-path" value="${GITHUB_CONFIG.path}" placeholder="bank-data.json" /></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn-primary" style="max-width:200px" onclick="saveGithubConfig()">💾 Save & Connect</button>
+        <button class="btn-sm btn-gold" style="padding:14px 20px" onclick="testGithubConnection()">🔗 Test Connection</button>
+        <button class="btn-sm btn-success" style="padding:14px 20px" onclick="pushToGithub()">⬆️ Push Data Now</button>
+      </div>
+      <div id="gh-status" style="margin-top:16px;font-size:13px"></div>
+    </div>
+  </div>
+  `;
+}
+
+function saveGithubConfig(){
+  GITHUB_CONFIG.token = document.getElementById('gh-token').value.trim();
+  GITHUB_CONFIG.owner = document.getElementById('gh-owner').value.trim();
+  GITHUB_CONFIG.repo = document.getElementById('gh-repo').value.trim();
+  GITHUB_CONFIG.branch = document.getElementById('gh-branch').value.trim()||'main';
+  GITHUB_CONFIG.path = document.getElementById('gh-path').value.trim()||'bank-data.json';
+  localStorage.setItem('dhelana_github_config', JSON.stringify({
+    token: GITHUB_CONFIG.token, owner: GITHUB_CONFIG.owner, repo: GITHUB_CONFIG.repo, branch: GITHUB_CONFIG.branch, path: GITHUB_CONFIG.path
+  }));
+  toast('GitHub config saved!','success');
+}
+
+async function testGithubConnection(){
+  const status = document.getElementById('gh-status');
+  status.innerHTML = '<span style="color:var(--gold)">⏳ Testing connection...</span>';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${document.getElementById('gh-owner').value}/${document.getElementById('gh-repo').value}`, {
+      headers:{ 'Authorization':`token ${document.getElementById('gh-token').value}` }
+    });
+    if(res.ok){
+      status.innerHTML = '<span style="color:var(--green)">✅ Connection successful! Repository found.</span>';
+    } else {
+      status.innerHTML = `<span style="color:var(--red)">❌ Connection failed (${res.status}). Check credentials.</span>`;
+    }
+  } catch(e){
+    status.innerHTML = '<span style="color:var(--red)">❌ Network error. Check your token and repo name.</span>';
+  }
+}
+
+async function pushToGithub(){
+  document.getElementById('gh-status').innerHTML = '<span style="color:var(--gold)">⬆️ Pushing data to GitHub...</span>';
+  await saveDB();
+  document.getElementById('gh-status').innerHTML = '<span style="color:var(--green)">✅ Data pushed to GitHub!</span>';
+}
+
+// Load GitHub config from localStorage on startup
+(()=>{
+  const saved = localStorage.getItem('dhelana_github_config');
+  if(saved){
+    const c = JSON.parse(saved);
+    Object.assign(GITHUB_CONFIG, c);
+  }
+})();
+
+// ============================================================
+// USER PAGES
+// ============================================================
+function renderUserShares(){
+  const u = currentUser;
+  const shares = u.shares||0;
+  const value = shares * DB.settings.sharePrice;
+  const pct = Math.min(100,(shares/(DB.settings.maxSharesPerUser||100))*100);
+  return `
+  <div class="page-header"><div class="page-title">My Shares</div></div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📈</div>
+      <div class="stat-value animated-num" data-target="${shares}" data-prefix="">0</div>
+      <div class="stat-label">My Total Shares</div>
+      <div class="share-bar" style="margin-top:10px"><div class="share-fill" data-width="${pct}" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${shares} / ${DB.settings.maxSharesPerUser||100} max</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-value animated-num" data-target="${value}" data-prefix="₹">₹0</div>
+      <div class="stat-label">Total Share Value</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💎</div>
+      <div class="stat-value">${formatCur(DB.settings.sharePrice)}</div>
+      <div class="stat-label">Price Per Share</div>
+    </div>
+  </div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Share Payment History</div></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Date</th><th>Shares</th><th>Amount</th><th>Note</th></tr></thead>
+        <tbody>
+          ${DB.sharePayments.filter(p=>p.userId===u.id).slice().reverse().map(p=>`<tr>
+            <td style="color:var(--text-muted)">${p.date?.split('T')[0]}</td>
+            <td>${p.shares}</td>
+            <td class="amount-gold">${formatCur(p.amount)}</td>
+            <td style="color:var(--text-muted)">${p.note||'-'}</td>
+          </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">No share payments recorded</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function renderUserLoans(){
+  const loans = DB.loans.filter(l=>l.userId===currentUser.id);
+  const activeLoans = loans.filter(l=>l.status==='active');
+  const totalBalance = activeLoans.reduce((a,l)=>a+(l.amount-l.paid),0);
+  const totalEMI = activeLoans.reduce((a,l)=>a+(l.emi||0),0);
+  return `
+  <div class="page-header"><div class="page-title">My Loans</div></div>
+  ${activeLoans.length>0?`
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-value">${activeLoans.length}</div><div class="stat-label">Active Loans</div></div>
+    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">${formatCur(totalBalance)}</div><div class="stat-label">Total Balance Due</div></div>
+    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">${formatCur(totalEMI)}</div><div class="stat-label">Total Monthly EMI</div></div>
+  </div>`:''}
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">My Loan Records</div><button class="btn-sm btn-gold" onclick="navigate('apply-loan')">🏦 Apply for Loan</button></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Loan ID</th><th>Amount</th><th>Rate</th><th>EMI/Month</th><th>Paid</th><th>Balance</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          ${loans.map(l=>{
+            const bal = l.amount - l.paid;
+            const pct = Math.min(100,(l.paid/l.amount)*100);
+            return `<tr>
+              <td style="color:var(--gold);font-size:12px;font-weight:700">${l.id}</td>
+              <td class="amount-gold">${formatCur(l.amount)}</td>
+              <td style="color:var(--text-muted)">${l.interestRate||DB.settings.interestRate||12}% p.a.</td>
+              <td style="color:var(--gold-light);font-weight:600">${l.emi ? formatCur(l.emi) : '—'}<br><span style="font-size:10px;color:var(--text-muted)">${l.tenure||'—'} months</span></td>
+              <td class="amount-positive">${formatCur(l.paid)}</td>
+              <td class="${bal>0?'amount-negative':'amount-positive'}">${formatCur(bal)}</td>
+              <td style="color:var(--text-muted);font-size:12px">${l.date?.split('T')[0]}</td>
+              <td>
+                <span class="badge-status ${l.status==='active'?'badge-pending':'badge-active'}">${l.status}</span>
+                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:6px;overflow:hidden">
+                  <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold-dark),var(--green));border-radius:2px"></div>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${pct.toFixed(0)}% repaid</div>
+              </td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">No loans yet — <a href="#" onclick="navigate(\'apply-loan\')" style="color:var(--gold)">Apply for one →</a></td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function renderApplyLoan(){
+  const rate = DB.settings.interestRate || 12;
+  const tenure = DB.settings.loanTenureMonths || 12;
+  return `
+  <div class="page-header"><div class="page-title">Apply for Loan</div><div class="page-subtitle">Interest rate: ${rate}% per annum • Set by bank admin</div></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <!-- APPLICATION FORM -->
+    <div class="data-card">
+      <div class="data-card-header"><div class="data-card-title">📝 Loan Application</div></div>
+      <div style="padding:24px">
+        <div class="form-group">
+          <label>Loan Amount (₹)</label>
+          <input type="number" id="la-amount" placeholder="e.g. 10000" min="500" oninput="calcLoanPreview()" />
+        </div>
+        <div class="form-group">
+          <label>Loan Tenure (Months)</label>
+          <input type="number" id="la-tenure" value="${tenure}" min="1" max="120" oninput="calcLoanPreview()" />
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Default: ${tenure} months (set by admin)</div>
+        </div>
+        <div class="form-group">
+          <label>Purpose / Description</label>
+          <textarea id="la-purpose" placeholder="Describe the purpose of your loan..." style="background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;width:100%;resize:vertical;min-height:80px;outline:none"></textarea>
+        </div>
+        <button class="btn-primary" onclick="submitLoanApplication()" style="margin-top:8px">📤 Submit Application</button>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:12px">Your application will be reviewed and processed by the admin.</div>
+      </div>
+    </div>
+
+    <!-- LIVE EMI CALCULATOR -->
+    <div class="data-card">
+      <div class="data-card-header"><div class="data-card-title">🧮 Loan Calculator</div></div>
+      <div style="padding:24px" id="loan-calc-result">
+        <div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:14px">
+          Enter loan amount and tenure to see the repayment breakdown
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BREAKDOWN TABLE (appears after input) -->
+  <div class="data-card" id="emi-schedule-card" style="display:none;margin-top:0">
+    <div class="data-card-header"><div class="data-card-title">📅 Monthly EMI Schedule</div></div>
+    <div class="data-card-body" id="emi-schedule-body"></div>
+  </div>
+
+  <style>
+  .calc-row { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05); }
+  .calc-row:last-child { border-bottom:none; }
+  .calc-label { font-size:13px;color:var(--text-muted); }
+  .calc-value { font-size:15px;font-weight:700;color:var(--cream); }
+  .highlight-box { background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06));border:1px solid rgba(201,168,76,0.25);border-radius:12px;padding:16px;margin:12px 0;text-align:center; }
+  .highlight-box .big-num { font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--gold-light); }
+  .highlight-box .big-label { font-size:11px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-top:4px; }
+  </style>
+  `;
+}
+
+function calcLoanPreview(){
+  const principal = parseFloat(document.getElementById('la-amount').value)||0;
+  const months = parseInt(document.getElementById('la-tenure').value)||1;
+  const annualRate = DB.settings.interestRate || 12;
+  const r = annualRate / 12 / 100; // monthly rate
+
+  if(principal <= 0){ 
+    document.getElementById('loan-calc-result').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:14px">Enter loan amount and tenure to see the repayment breakdown</div>';
+    document.getElementById('emi-schedule-card').style.display='none';
+    return;
+  }
+
+  // EMI formula: P * r * (1+r)^n / ((1+r)^n - 1)
+  let emi, totalPayable, totalInterest;
+  if(r === 0){
+    emi = principal / months;
+    totalPayable = principal;
+    totalInterest = 0;
+  } else {
+    emi = principal * r * Math.pow(1+r, months) / (Math.pow(1+r, months) - 1);
+    totalPayable = emi * months;
+    totalInterest = totalPayable - principal;
+  }
+
+  document.getElementById('loan-calc-result').innerHTML = `
+    <div class="highlight-box">
+      <div class="big-num">${formatCur(Math.ceil(emi))}</div>
+      <div class="big-label">Monthly EMI</div>
+    </div>
+    <div class="calc-row"><span class="calc-label">Loan Amount</span><span class="calc-value amount-gold">${formatCur(principal)}</span></div>
+    <div class="calc-row"><span class="calc-label">Interest Rate</span><span class="calc-value">${annualRate}% per annum</span></div>
+    <div class="calc-row"><span class="calc-label">Tenure</span><span class="calc-value">${months} months</span></div>
+    <div class="calc-row"><span class="calc-label">Total Interest</span><span class="calc-value amount-negative">${formatCur(Math.round(totalInterest))}</span></div>
+    <div class="calc-row" style="border-top:1px solid rgba(201,168,76,0.2);margin-top:4px;padding-top:16px">
+      <span class="calc-label" style="font-weight:700;color:var(--cream)">Total Amount Payable</span>
+      <span class="calc-value" style="color:var(--gold);font-size:18px">${formatCur(Math.round(totalPayable))}</span>
+    </div>
+  `;
+
+  // Build schedule
+  let balance = principal;
+  let rows = '';
+  const startDate = new Date();
+  for(let m=1; m<=Math.min(months,36); m++){
+    const interestForMonth = balance * r;
+    const principalForMonth = emi - interestForMonth;
+    balance -= principalForMonth;
+    if(balance < 0) balance = 0;
+    const dueDate = new Date(startDate);
+    dueDate.setMonth(dueDate.getMonth() + m);
+    rows += `<tr>
+      <td style="color:var(--text-muted)">${m}</td>
+      <td style="color:var(--text-muted)">${dueDate.toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
+      <td class="amount-gold">${formatCur(Math.ceil(emi))}</td>
+      <td class="amount-positive">${formatCur(Math.round(principalForMonth))}</td>
+      <td class="amount-negative">${formatCur(Math.round(interestForMonth))}</td>
+      <td style="color:${balance<1?'var(--green)':'var(--cream)'}">${formatCur(Math.max(0,Math.round(balance)))}</td>
+    </tr>`;
+  }
+  if(months > 36) rows += `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:12px">... and ${months-36} more months</td></tr>`;
+
+  document.getElementById('emi-schedule-card').style.display='block';
+  document.getElementById('emi-schedule-body').innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Due Month</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function submitLoanApplication(){
+  const amount = parseFloat(document.getElementById('la-amount').value)||0;
+  const tenure = parseInt(document.getElementById('la-tenure').value)||1;
+  const purpose = document.getElementById('la-purpose').value.trim();
+  if(!amount){ toast('Enter loan amount','error'); return; }
+  if(!purpose){ toast('Please describe the loan purpose','error'); return; }
+
+  const annualRate = DB.settings.interestRate || 12;
+  const r = annualRate / 12 / 100;
+  const emi = r > 0
+    ? Math.ceil(amount * r * Math.pow(1+r, tenure) / (Math.pow(1+r, tenure) - 1))
+    : Math.ceil(amount / tenure);
+  const totalPayable = emi * tenure;
+
+  const loanId = 'LN'+Date.now().toString(36).toUpperCase();
+  DB.loans.push({
+    id: loanId,
+    userId: currentUser.id,
+    amount,
+    paid: 0,
+    date: now(),
+    status: 'active',
+    desc: purpose,
+    tenure,
+    emi,
+    totalPayable,
+    interestRate: annualRate,
+    appliedByUser: true
+  });
+  DB.transactions.push({ id:uuid(), userId:currentUser.id, type:'debit', amount, note:`Loan applied: ${loanId}. ${purpose}`, date:now() });
+  saveDB();
+  toast(`Loan application submitted! EMI: ${formatCur(emi)}/month`, 'success');
+  navigate('my-loans');
+}
+
+function renderUserPenalties(){
+  const penalties = DB.penalties.filter(p=>p.userId===currentUser.id);
+  const total = penalties.filter(p=>p.status!=='paid').reduce((a,p)=>a+p.amount,0);
+  return `
+  <div class="page-header"><div class="page-title">My Penalties</div></div>
+  ${total>0?`<div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:var(--red)">⚠️ You have <strong>${formatCur(total)}</strong> in pending penalties. Please pay them at the bank.</div>`:''}
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Penalty Records</div></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Date</th><th>Reason</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          ${penalties.map(p=>`<tr>
+            <td style="color:var(--text-muted)">${p.date?.split('T')[0]}</td>
+            <td>${p.reason}</td>
+            <td class="${p.status==='paid'?'amount-positive':'amount-negative'}">${formatCur(p.amount)}</td>
+            <td><span class="badge-status ${p.status==='paid'?'badge-paid':'badge-overdue'}">${p.status}</span></td>
+          </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">No penalties 🎉</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function renderUserTransactions(){
+  const txns = DB.transactions.filter(t=>t.userId===currentUser.id).slice().reverse();
+  return `
+  <div class="page-header"><div class="page-title">Transaction History</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">All My Transactions</div></div>
+    <div class="data-card-body">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead>
+        <tbody>
+          ${txns.map(t=>`<tr>
+            <td style="color:var(--text-muted)">${t.date?.split('T')[0]}</td>
+            <td><span class="badge-status ${t.type==='credit'?'badge-active':'badge-overdue'}">${t.type}</span></td>
+            <td class="${t.type==='credit'?'amount-positive':'amount-negative'}">${formatCur(t.amount)}</td>
+            <td style="color:var(--text-muted);font-size:12px">${t.note||'-'}</td>
+          </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">No transactions yet</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function renderUserProfile(){
+  const u = currentUser;
+  return `
+  <div class="page-header"><div class="page-title">My Profile</div></div>
+  <div class="data-card">
+    <div class="data-card-header"><div class="data-card-title">Account Information</div></div>
+    <div style="padding:28px">
+      <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:var(--navy)">${u.name[0]}</div>
+        <div><div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700">${u.name}</div><div style="color:var(--gold);font-size:13px">${u.id}</div></div>
+      </div>
+      <div class="form-group"><label>Full Name</label><input id="up-name" value="${u.name}" /></div>
+      <div class="form-group"><label>Phone</label><input id="up-phone" value="${u.phone||''}" /></div>
+      <div class="form-group"><label>New User ID (leave blank to keep)</label><input id="up-newid" placeholder="New login ID..." /></div>
+      <div class="form-group"><label>Current Password (required to change password)</label><input type="password" id="up-curpw" placeholder="Current password..." /></div>
+      <div class="form-group"><label>New Password (leave blank to keep)</label><input type="password" id="up-newpw" placeholder="New password..." /></div>
+      <button class="btn-primary" style="max-width:200px;margin-top:8px" onclick="saveUserProfile()">💾 Update Profile</button>
+    </div>
+  </div>
+  `;
+}
+
+function saveUserProfile(){
+  const user = DB.users.find(u=>u.id===currentUser.id);
+  if(!user) return;
+  const name = document.getElementById('up-name').value.trim();
+  const phone = document.getElementById('up-phone').value.trim();
+  const newId = document.getElementById('up-newid').value.trim().toUpperCase();
+  const curPw = document.getElementById('up-curpw').value;
+  const newPw = document.getElementById('up-newpw').value;
+  if(name) user.name = name;
+  user.phone = phone;
+  if(newId){
+    if(DB.users.find(u=>u.id===newId&&u.id!==currentUser.id)||DB.admins.find(a=>a.id===newId)){ toast('ID already taken','error'); return; }
+    user.id = newId;
+  }
+  if(newPw){
+    if(!curPw){ toast('Enter current password to change it','error'); return; }
+    if(curPw !== user.password){ toast('Current password is incorrect','error'); return; }
+    user.password = newPw;
+  }
+  currentUser = user;
+  document.getElementById('sidebar-username').textContent = user.name;
+  document.getElementById('sidebar-avatar').textContent = user.name[0];
+  saveDB(); toast('Profile updated!','success');
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(title, body, buttons=[]){
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn-sm btn-danger" onclick="closeModal()">✕ Cancel</button>
+    ${buttons.map(b=>`<button class="btn-sm btn-primary" style="padding:10px 24px;font-size:14px" onclick="${b.action}">${b.label}</button>`).join('')}
+  `;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('active'); }
+document.getElementById('modal-overlay').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type='info'){
+  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `${icons[type]||'ℹ️'} ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(40px)'; el.style.transition='all 0.3s'; setTimeout(()=>el.remove(), 300); }, 3000);
+}
+</script>
+</body>
+</html>
