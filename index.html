@@ -479,11 +479,11 @@ tr:hover td { background:rgba(201,168,76,0.04); }
       </div>
       <div class="form-group">
         <label>User ID</label>
-        <input type="text" id="login-userid" placeholder="Enter your User ID" />
+        <input type="text" id="login-userid" placeholder="Enter your User ID" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()" />
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="login-password" placeholder="Enter your password" />
+        <input type="password" id="login-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" />
       </div>
       <button class="btn-primary" onclick="doLogin()">Sign In →</button>
       <div class="error-msg" id="login-error">❌ Invalid credentials. Please try again.</div>
@@ -1217,14 +1217,18 @@ function editUser(id){
 
 function saveEditUser(id){
   const u = DB.users.find(u=>u.id===id);
-  if(!u) return;
-  u.name = document.getElementById('eu-name').value.trim() || u.name;
-  u.phone = document.getElementById('eu-phone').value.trim();
-  u.joinDate = document.getElementById('eu-joindate').value;
+  if(!u){ toast('❌ Member not found', 'error'); return; }
+  const name  = document.getElementById('eu-name').value.trim();
+  const phone = document.getElementById('eu-phone').value.trim();
+  const join  = document.getElementById('eu-joindate').value;
   const newPw = document.getElementById('eu-pw').value;
-  if(newPw) u.password = newPw;
-  saveDB();
-  closeModal(); navigate('users');
+  if(!name){ toast('⚠️ Name cannot be empty', 'warning'); return; }
+  if(phone && !/^\d{10}$/.test(phone)){ toast('⚠️ Phone must be 10 digits', 'warning'); return; }
+  if(newPw && newPw.length < 4){ toast('⚠️ New password must be at least 4 characters', 'warning'); return; }
+  u.name = name; u.phone = phone; u.joinDate = join;
+  if(newPw){ u.password = newPw; toast('🔐 Password updated', 'info'); }
+  saveDB(); closeModal(); navigate('users');
+  toast(`✅ Member "${name}" updated`, 'success');
 }
 
 function setShares(id){
@@ -1240,30 +1244,32 @@ function setShares(id){
 
 function saveShares(id){
   const u = DB.users.find(u=>u.id===id);
-  if(!u) return;
-  const val = parseInt(document.getElementById('ss-shares').value)||0;
-  if(val < 0){ toast('Shares cannot be negative','error'); return; }
-  if(val > (DB.settings.maxSharesPerUser||100)){ toast('Exceeds max shares allowed','error'); return; }
+  if(!u){ toast('❌ Member not found', 'error'); return; }
+  const val = parseInt(document.getElementById('ss-shares').value);
+  if(isNaN(val) || val < 0){ toast('⚠️ Shares must be 0 or more', 'warning'); return; }
+  if(val > (DB.settings.maxSharesPerUser||100)){ toast(`⚠️ Max allowed shares is ${DB.settings.maxSharesPerUser||100}`, 'warning'); return; }
   const diff = val - (u.shares||0);
   u.shares = val;
-  // Log transaction
-  DB.transactions.push({ id:uuid(), userId:id, type: diff>=0?'credit':'debit', amount:Math.abs(diff)*DB.settings.sharePrice, note:`Share ${diff>=0?'increase':'decrease'}: ${Math.abs(diff)} shares`, date:now() });
-  saveDB(); closeModal(); navigate('users');
+  DB.transactions.push({ id:uuid(), userId:id, type: diff>=0?'credit':'debit', amount:Math.abs(diff)*DB.settings.sharePrice, note:`Share ${diff>=0?'increased':'decreased'} by ${Math.abs(diff)} → now ${val}`, date:now() });
+  saveDB(); closeModal(); navigate('shares');
+  toast(`✅ Shares updated to ${val} (${diff>=0?'+':''}${diff})`, 'success');
 }
 
 function toggleUser(id){
   const u = DB.users.find(u=>u.id===id);
-  if(!u) return;
-  u.status = u.status==='active'?'inactive':'active';
+  if(!u){ toast('❌ Member not found', 'error'); return; }
+  u.status = u.status==='active' ? 'inactive' : 'active';
   saveDB(); navigate('users');
-  toast(`Member ${u.status==='active'?'activated':'deactivated'}`, u.status==='active'?'success':'info');
+  toast(u.status==='active' ? `✅ ${u.name} account activated` : `🔒 ${u.name} account deactivated`, u.status==='active'?'success':'warning');
 }
 
 function deleteUser(id){
-  if(!confirm('Delete this member? All their data will remain for records.')) return;
+  const u = DB.users.find(u=>u.id===id);
+  if(!u){ toast('❌ Member not found', 'error'); return; }
+  if(!confirm(`Remove member "${u.name}"? Their transaction history will be kept.`)) return;
   DB.users = DB.users.filter(u=>u.id!==id);
   saveDB(); navigate('users');
-  toast('Member removed','info');
+  toast(`🗑️ Member "${u.name}" removed`, 'info');
 }
 
 // ============================================================
@@ -1294,18 +1300,28 @@ function renderAddUser(){
 }
 
 function addUser(){
-  const name = document.getElementById('au-name').value.trim();
-  const phone = document.getElementById('au-phone').value.trim();
-  const id = document.getElementById('au-id').value.trim().toUpperCase();
-  const pw = document.getElementById('au-pw').value;
+  const name   = document.getElementById('au-name').value.trim();
+  const phone  = document.getElementById('au-phone').value.trim();
+  const id     = document.getElementById('au-id').value.trim().toUpperCase();
+  const pw     = document.getElementById('au-pw').value;
   const shares = parseInt(document.getElementById('au-shares').value)||0;
-  const join = document.getElementById('au-join').value;
-  if(!name||!id||!pw){ toast('Name, User ID and Password are required','error'); return; }
-  if(DB.users.find(u=>u.id===id)||DB.admins.find(a=>a.id===id)){ toast('User ID already exists','error'); return; }
+  const join   = document.getElementById('au-join').value;
+
+  if(!name)  { toast('⚠️ Full name is required', 'error'); return; }
+  if(!id)    { toast('⚠️ User ID is required', 'error'); return; }
+  if(id.length < 3){ toast('⚠️ User ID must be at least 3 characters', 'warning'); return; }
+  if(!pw)    { toast('⚠️ Password is required', 'error'); return; }
+  if(pw.length < 4){ toast('⚠️ Password must be at least 4 characters', 'warning'); return; }
+  if(phone && !/^\d{10}$/.test(phone)){ toast('⚠️ Phone must be 10 digits', 'warning'); return; }
+  if(DB.users.find(u=>u.id===id)){ toast(`❌ User ID "${id}" already exists`, 'error'); return; }
+  if(DB.admins.find(a=>a.id===id)){ toast(`❌ ID "${id}" is already used by an admin`, 'error'); return; }
+  if(shares < 0){ toast('⚠️ Shares cannot be negative', 'warning'); return; }
+  if(shares > (DB.settings.maxSharesPerUser||100)){ toast(`⚠️ Max allowed shares is ${DB.settings.maxSharesPerUser||100}`, 'warning'); return; }
+
   DB.users.push({ id, password:pw, name, phone, shares, joinDate:join, status:'active' });
   if(shares>0) DB.transactions.push({ id:uuid(), userId:id, type:'credit', amount:shares*DB.settings.sharePrice, note:`Initial share purchase: ${shares} shares`, date:now() });
   saveDB(); navigate('users');
-  toast(`Member ${name} added successfully!`,'success');
+  toast(`✅ Member "${name}" added successfully!`, 'success');
 }
 
 // ============================================================
@@ -1391,12 +1407,15 @@ function saveSharePayment(){
   const userId = document.getElementById('sp-user').value;
   const shares = parseInt(document.getElementById('sp-shares').value)||0;
   const amount = parseFloat(document.getElementById('sp-amount').value)||0;
-  const date = document.getElementById('sp-date').value;
-  const note = document.getElementById('sp-note').value;
-  if(!shares){ toast('Enter share count','error'); return; }
+  const date   = document.getElementById('sp-date').value;
+  const note   = document.getElementById('sp-note').value;
+  if(!shares || shares <= 0){ toast('⚠️ Enter a valid share count', 'warning'); return; }
+  if(!amount || amount <= 0){ toast('⚠️ Enter a valid payment amount', 'warning'); return; }
+  if(!date){ toast('⚠️ Payment date is required', 'warning'); return; }
   DB.sharePayments.push({ id:uuid(), userId, shares, amount, date:date+'T00:00:00', note });
   DB.transactions.push({ id:uuid(), userId, type:'credit', amount, note:`Share payment: ${shares} shares. ${note}`, date:date+'T00:00:00' });
   saveDB(); closeModal(); navigate('shares');
+  toast(`✅ Share payment of ₹${amount} recorded`, 'success');
 }
 
 // ============================================================
@@ -1489,21 +1508,26 @@ function previewLoanAdmin(){
 }
 
 function saveLoan(){
-  const userId = document.getElementById('nl-user').value;
-  const amount = parseFloat(document.getElementById('nl-amount').value)||0;
-  const months = parseInt(document.getElementById('nl-tenure').value)||1;
-  const annualRate = parseFloat(document.getElementById('nl-rate').value)||(DB.settings.interestRate||12);
-  const date = document.getElementById('nl-date').value;
-  const desc = document.getElementById('nl-desc').value;
-  if(!amount){ toast('Enter loan amount','error'); return; }
-  const r = annualRate / 12 / 100;
+  const userId     = document.getElementById('nl-user').value;
+  const amount     = parseFloat(document.getElementById('nl-amount').value)||0;
+  const months     = parseInt(document.getElementById('nl-tenure').value)||0;
+  const annualRate = parseFloat(document.getElementById('nl-rate').value)||0;
+  const date       = document.getElementById('nl-date').value;
+  const desc       = document.getElementById('nl-desc').value.trim();
+  if(!amount || amount <= 0)  { toast('⚠️ Enter a valid loan amount', 'warning'); return; }
+  if(!months || months <= 0)  { toast('⚠️ Tenure must be at least 1 month', 'warning'); return; }
+  if(annualRate < 0)           { toast('⚠️ Interest rate cannot be negative', 'warning'); return; }
+  if(!date)                    { toast('⚠️ Issue date is required', 'warning'); return; }
+  if(!desc)                    { toast('⚠️ Loan purpose/description is required', 'warning'); return; }
+  const u = DB.users.find(u=>u.id===userId);
+  const r   = annualRate / 12 / 100;
   const emi = r===0 ? Math.ceil(amount/months) : Math.ceil(amount*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1));
   const totalPayable = emi * months;
   const loanId = 'LN'+Date.now().toString(36).toUpperCase();
   DB.loans.push({ id:loanId, userId, amount, paid:0, date:date+'T00:00:00', status:'active', desc, tenure:months, emi, totalPayable, interestRate:annualRate });
   DB.transactions.push({ id:uuid(), userId, type:'debit', amount, note:`Loan issued: ${loanId}. ${desc}`, date:date+'T00:00:00' });
   saveDB(); closeModal(); navigate('loans');
-  toast(`Loan issued! EMI: ${formatCur(emi)}/month`, 'success');
+  toast(`✅ Loan of ₹${amount.toLocaleString('en-IN')} issued to ${u?.name||userId}. EMI: ₹${emi.toLocaleString('en-IN')}/month`, 'success', 5000);
 }
 
 function viewLoanDetails(loanId){
@@ -1547,15 +1571,18 @@ function recordLoanPayment(loanId){
 
 function saveLoanPayment(loanId){
   const loan = DB.loans.find(l=>l.id===loanId);
-  if(!loan) return;
-  const amt = parseFloat(document.getElementById('lp-amount').value)||0;
+  if(!loan){ toast('❌ Loan not found', 'error'); return; }
+  const amt  = parseFloat(document.getElementById('lp-amount').value)||0;
   const date = document.getElementById('lp-date').value;
-  if(!amt){ toast('Enter payment amount','error'); return; }
+  const bal  = loan.amount - loan.paid;
+  if(!amt || amt <= 0){ toast('⚠️ Enter a valid payment amount', 'warning'); return; }
+  if(amt > bal){ toast(`⚠️ Amount exceeds balance of ₹${bal.toLocaleString('en-IN')}`, 'warning'); return; }
+  if(!date){ toast('⚠️ Payment date is required', 'warning'); return; }
   loan.paid += amt;
-  if(loan.paid >= loan.amount){ loan.paid = loan.amount; loan.status = 'closed'; }
-  DB.transactions.push({ id:uuid(), userId:loan.userId, type:'credit', amount:amt, note:`Loan payment: ${loanId}`, date:date+'T00:00:00' });
+  if(loan.paid >= loan.amount){ loan.paid = loan.amount; loan.status = 'closed'; toast('🎉 Loan fully repaid and closed!', 'success'); }
+  else { toast(`✅ Payment of ₹${amt.toLocaleString('en-IN')} recorded. Balance: ₹${(loan.amount-loan.paid).toLocaleString('en-IN')}`, 'success'); }
+  DB.transactions.push({ id:uuid(), userId:loan.userId, type:'credit', amount:amt, note:`Loan repayment: ${loanId}`, date:date+'T00:00:00' });
   saveDB(); closeModal(); navigate('loans');
-  toast('Payment recorded','success');
 }
 
 // ============================================================
@@ -1607,27 +1634,36 @@ function addPenalty(){
 function savePenalty(){
   const userId = document.getElementById('ap-user').value;
   const amount = parseFloat(document.getElementById('ap-amount').value)||0;
-  const date = document.getElementById('ap-date').value;
-  const reason = document.getElementById('ap-reason').value;
-  if(!amount||!reason){ toast('Fill all fields','error'); return; }
+  const date   = document.getElementById('ap-date').value;
+  const reason = document.getElementById('ap-reason').value.trim();
+  if(!amount || amount <= 0){ toast('⚠️ Enter a valid penalty amount', 'warning'); return; }
+  if(!reason){ toast('⚠️ Penalty reason is required', 'warning'); return; }
+  if(!date){ toast('⚠️ Date is required', 'warning'); return; }
+  const u = DB.users.find(u=>u.id===userId);
   DB.penalties.push({ id:uuid(), userId, amount, date:date+'T00:00:00', reason, status:'pending' });
   DB.transactions.push({ id:uuid(), userId, type:'debit', amount, note:`Penalty: ${reason}`, date:date+'T00:00:00' });
   saveDB(); closeModal(); navigate('penalties');
-  toast('Penalty added','success');
+  toast(`⚠️ Penalty of ₹${amount} added for ${u?.name||userId}`, 'warning');
 }
 
 function markPenaltyPaid(id){
   const p = DB.penalties.find(p=>p.id===id);
-  if(!p) return;
-  p.status='paid';
+  if(!p){ toast('❌ Penalty record not found', 'error'); return; }
+  if(p.status==='paid'){ toast('ℹ️ This penalty is already paid', 'info'); return; }
+  p.status = 'paid';
+  const u = DB.users.find(u=>u.id===p.userId);
   DB.transactions.push({ id:uuid(), userId:p.userId, type:'credit', amount:p.amount, note:`Penalty paid: ${p.reason}`, date:now() });
   saveDB(); navigate('penalties');
-  toast('Penalty marked as paid','success');
+  toast(`✅ Penalty of ₹${p.amount.toLocaleString('en-IN')} marked as paid for ${u?.name||p.userId}`, 'success');
 }
 
 function deletePenalty(id){
-  DB.penalties = DB.penalties.filter(p=>p.id!==id);
+  const p = DB.penalties.find(x=>x.id===id);
+  if(!p){ toast('❌ Penalty not found', 'error'); return; }
+  if(!confirm(`Delete penalty of ₹${p.amount} — "${p.reason}"?`)) return;
+  DB.penalties = DB.penalties.filter(x=>x.id!==id);
   saveDB(); navigate('penalties');
+  toast('🗑️ Penalty deleted', 'info');
 }
 
 // ============================================================
@@ -1677,14 +1713,17 @@ function addManualTransaction(){
 
 function saveManualTransaction(){
   const userId = document.getElementById('mt-user').value;
-  const type = document.getElementById('mt-type').value;
+  const type   = document.getElementById('mt-type').value;
   const amount = parseFloat(document.getElementById('mt-amount').value)||0;
-  const date = document.getElementById('mt-date').value;
-  const note = document.getElementById('mt-note').value;
-  if(!amount){ toast('Enter amount','error'); return; }
+  const date   = document.getElementById('mt-date').value;
+  const note   = document.getElementById('mt-note').value.trim();
+  if(!amount || amount <= 0){ toast('⚠️ Enter a valid amount', 'warning'); return; }
+  if(!date){ toast('⚠️ Date is required', 'warning'); return; }
+  if(!note){ toast('⚠️ Transaction note is required', 'warning'); return; }
+  const u = DB.users.find(u=>u.id===userId);
   DB.transactions.push({ id:uuid(), userId, type, amount, note, date:date+'T00:00:00' });
   saveDB(); closeModal(); navigate('transactions');
-  toast('Transaction added','success');
+  toast(`✅ ${type==='credit'?'Credit':'Debit'} of ₹${amount.toLocaleString('en-IN')} added for ${u?.name||userId}`, 'success');
 }
 
 // ============================================================
@@ -1734,22 +1773,29 @@ function addMonthlyPayment(){
 
 function saveMonthlyPayment(){
   const userId = document.getElementById('mp-user').value;
-  const month = document.getElementById('mp-month').value;
+  const month  = document.getElementById('mp-month').value;
   const amount = parseFloat(document.getElementById('mp-amount').value)||0;
   const status = document.getElementById('mp-status').value;
+  if(!month)            { toast('⚠️ Please select a month', 'warning'); return; }
+  if(!amount || amount <= 0){ toast('⚠️ Enter a valid amount', 'warning'); return; }
+  const existing = DB.monthlyPayments.find(m=>m.userId===userId && m.month===month);
+  if(existing)          { toast(`⚠️ Payment for ${month} already recorded for this member`, 'warning'); return; }
+  const u = DB.users.find(u=>u.id===userId);
   DB.monthlyPayments.push({ id:uuid(), userId, month, amount, status, paidDate:status==='paid'?today():null });
   if(status==='paid') DB.transactions.push({ id:uuid(), userId, type:'credit', amount, note:`Monthly payment: ${month}`, date:now() });
   saveDB(); closeModal(); navigate('monthly');
-  toast('Monthly payment recorded','success');
+  toast(`✅ Monthly payment for ${month} recorded for ${u?.name||userId}`, 'success');
 }
 
 function markMonthlyPaid(id){
   const mp = DB.monthlyPayments.find(m=>m.id===id);
-  if(!mp) return;
+  if(!mp){ toast('❌ Payment record not found', 'error'); return; }
+  if(mp.status==='paid'){ toast('ℹ️ Already marked as paid', 'info'); return; }
   mp.status='paid'; mp.paidDate=today();
+  const u = DB.users.find(u=>u.id===mp.userId);
   DB.transactions.push({ id:uuid(), userId:mp.userId, type:'credit', amount:mp.amount, note:`Monthly payment: ${mp.month}`, date:now() });
   saveDB(); navigate('monthly');
-  toast('Marked as paid','success');
+  toast(`✅ Monthly payment for ${mp.month} marked as paid for ${u?.name||mp.userId}`, 'success');
 }
 
 // ============================================================
@@ -1772,10 +1818,6 @@ function renderAdminSettings(){
       <div class="form-row">
         <div class="form-group"><label>Loan Interest Rate (% per year)</label><input type="number" id="set-interest" value="${DB.settings.interestRate||12}" step="0.5" /></div>
         <div class="form-group"><label>Default Loan Tenure (Months)</label><input type="number" id="set-tenure" value="${DB.settings.loanTenureMonths||12}" /></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Loan Interest Rate (% per year)</label><input type="number" id="set-interest" value="${DB.settings.interestRate||12}" step="0.5" /></div>
-        <div class="form-group"><label>Default Loan Tenure (months)</label><input type="number" id="set-tenure" value="${DB.settings.loanTenureMonths||12}" /></div>
       </div>
       <button class="btn-primary" style="max-width:200px;margin-top:8px" onclick="saveSettings()">💾 Save Settings</button>
     </div>
@@ -1800,13 +1842,27 @@ function renderAdminSettings(){
 }
 
 function saveSettings(){
-  DB.settings.sharePrice = parseFloat(document.getElementById('set-shareprice').value)||500;
-  DB.settings.maxSharesPerUser = parseInt(document.getElementById('set-maxshares').value)||100;
-  DB.settings.penaltyRate = parseFloat(document.getElementById('set-penalty').value)||2;
-  DB.settings.bankName = document.getElementById('set-bankname').value.trim()||'Dhelana Youth Bank';
-  DB.settings.interestRate = parseFloat(document.getElementById('set-interest').value)||12;
-  DB.settings.loanTenureMonths = parseInt(document.getElementById('set-tenure').value)||12;
-  saveDB(); toast('Settings saved!','success');
+  const sharePrice   = parseFloat(document.getElementById('set-shareprice').value)||0;
+  const maxShares    = parseInt(document.getElementById('set-maxshares').value)||0;
+  const penaltyRate  = parseFloat(document.getElementById('set-penalty').value);
+  const bankName     = document.getElementById('set-bankname').value.trim();
+  const interestRate = parseFloat(document.getElementById('set-interest').value);
+  const tenure       = parseInt(document.getElementById('set-tenure').value)||0;
+  if(!sharePrice || sharePrice <= 0)   { toast('⚠️ Share price must be greater than ₹0', 'warning'); return; }
+  if(!maxShares  || maxShares  <= 0)   { toast('⚠️ Max shares must be greater than 0', 'warning'); return; }
+  if(isNaN(penaltyRate) || penaltyRate < 0){ toast('⚠️ Penalty rate cannot be negative', 'warning'); return; }
+  if(!bankName)                         { toast('⚠️ Bank name cannot be empty', 'warning'); return; }
+  if(isNaN(interestRate) || interestRate < 0){ toast('⚠️ Interest rate cannot be negative', 'warning'); return; }
+  if(interestRate > 100)                { toast('⚠️ Interest rate seems too high (max 100%)', 'warning'); return; }
+  if(!tenure || tenure <= 0)            { toast('⚠️ Default tenure must be at least 1 month', 'warning'); return; }
+  DB.settings.sharePrice       = sharePrice;
+  DB.settings.maxSharesPerUser = maxShares;
+  DB.settings.penaltyRate      = penaltyRate;
+  DB.settings.bankName         = bankName;
+  DB.settings.interestRate     = interestRate;
+  DB.settings.loanTenureMonths = tenure;
+  saveDB();
+  toast('✅ Bank settings saved successfully', 'success');
 }
 
 function addAdmin(){
@@ -1820,20 +1876,29 @@ function addAdmin(){
 }
 
 function saveAdmin(){
-  const id = document.getElementById('aa-id').value.trim().toUpperCase();
+  const id   = document.getElementById('aa-id').value.trim().toUpperCase();
   const name = document.getElementById('aa-name').value.trim();
-  const pw = document.getElementById('aa-pw').value;
-  if(!id||!name||!pw){ toast('All fields required','error'); return; }
-  if(DB.admins.find(a=>a.id===id)||DB.users.find(u=>u.id===id)){ toast('ID already exists','error'); return; }
+  const pw   = document.getElementById('aa-pw').value;
+  if(!id)  { toast('⚠️ Admin ID is required', 'warning'); return; }
+  if(!name){ toast('⚠️ Admin name is required', 'warning'); return; }
+  if(!pw)  { toast('⚠️ Password is required', 'warning'); return; }
+  if(pw.length < 4){ toast('⚠️ Password must be at least 4 characters', 'warning'); return; }
+  if(DB.admins.find(a=>a.id===id)){ toast(`❌ Admin ID "${id}" already exists`, 'error'); return; }
+  if(DB.users.find(u=>u.id===id)) { toast(`❌ ID "${id}" already used by a member`, 'error'); return; }
   DB.admins.push({ id, name, password:pw, createdAt:now() });
   saveDB(); closeModal(); navigate('admin-settings');
-  toast('Admin added','success');
+  toast(`✅ Admin "${name}" created successfully`, 'success');
 }
 
 function deleteAdmin(id){
-  if(!confirm('Remove this admin?')) return;
-  DB.admins = DB.admins.filter(a=>a.id!==id);
+  if(id === currentUser.id){ toast('❌ You cannot delete your own admin account', 'error'); return; }
+  if(DB.admins.length <= 1){ toast('❌ Cannot delete the only admin account', 'error'); return; }
+  const a = DB.admins.find(x=>x.id===id);
+  if(!a){ toast('❌ Admin not found', 'error'); return; }
+  if(!confirm(`Remove admin "${a.name}" (${a.id})?`)) return;
+  DB.admins = DB.admins.filter(x=>x.id!==id);
   saveDB(); navigate('admin-settings');
+  toast(`🗑️ Admin "${a.name}" removed`, 'info');
 }
 
 // ============================================================
@@ -1857,21 +1922,29 @@ function renderAdminProfile(){
 }
 
 function saveAdminProfile(){
-  const name = document.getElementById('ap-name').value.trim();
+  const name  = document.getElementById('ap-name').value.trim();
   const newId = document.getElementById('ap-id-new').value.trim().toUpperCase();
   const newPw = document.getElementById('ap-pw').value;
   const admin = DB.admins.find(a=>a.id===currentUser.id);
-  if(!admin) return;
-  if(name) admin.name = name;
+  if(!admin){ toast('❌ Admin account not found', 'error'); return; }
+  if(!name){ toast('⚠️ Name cannot be empty', 'warning'); return; }
   if(newId){
-    if(DB.admins.find(a=>a.id===newId&&a.id!==currentUser.id)||DB.users.find(u=>u.id===newId)){ toast('ID already taken','error'); return; }
+    if(newId.length < 3){ toast('⚠️ New ID must be at least 3 characters', 'warning'); return; }
+    if(DB.admins.find(a=>a.id===newId&&a.id!==currentUser.id)){ toast(`❌ Admin ID "${newId}" already taken`, 'error'); return; }
+    if(DB.users.find(u=>u.id===newId)){ toast(`❌ ID "${newId}" already used by a member`, 'error'); return; }
     admin.id = newId;
+    toast(`✅ Login ID changed to "${newId}"`, 'info');
   }
-  if(newPw) admin.password = newPw;
+  if(newPw){
+    if(newPw.length < 4){ toast('⚠️ Password must be at least 4 characters', 'warning'); return; }
+    admin.password = newPw;
+    toast('🔐 Password updated', 'info');
+  }
+  admin.name = name;
   currentUser = admin;
   document.getElementById('sidebar-username').textContent = admin.name;
   document.getElementById('sidebar-avatar').textContent = admin.name[0];
-  saveDB(); toast('Profile updated!','success');
+  saveDB(); toast('✅ Profile updated successfully', 'success');
 }
 
 // ============================================================
@@ -2180,11 +2253,19 @@ function calcLoanPreview(){
 }
 
 function submitLoanApplication(){
-  const amount = parseFloat(document.getElementById('la-amount').value)||0;
-  const tenure = parseInt(document.getElementById('la-tenure').value)||1;
+  const amount  = parseFloat(document.getElementById('la-amount').value)||0;
+  const tenure  = parseInt(document.getElementById('la-tenure').value)||0;
   const purpose = document.getElementById('la-purpose').value.trim();
-  if(!amount){ toast('Enter loan amount','error'); return; }
-  if(!purpose){ toast('Please describe the loan purpose','error'); return; }
+  if(!amount || amount <= 0){ toast('⚠️ Enter a valid loan amount', 'warning'); return; }
+  if(amount < 500){ toast('⚠️ Minimum loan amount is ₹500', 'warning'); return; }
+  if(!tenure || tenure < 1){ toast('⚠️ Tenure must be at least 1 month', 'warning'); return; }
+  if(tenure > 120){ toast('⚠️ Maximum tenure is 120 months (10 years)', 'warning'); return; }
+  if(!purpose){ toast('⚠️ Please describe the purpose of your loan', 'warning'); return; }
+  if(purpose.length < 10){ toast('⚠️ Please describe purpose in at least 10 characters', 'warning'); return; }
+
+  // Check existing active loans
+  const activeLoans = DB.loans.filter(l=>l.userId===currentUser.id&&l.status==='active');
+  if(activeLoans.length >= 3){ toast('❌ You already have 3 active loans. Repay one before applying again', 'error'); return; }
 
   const annualRate = DB.settings.interestRate || 12;
   const r = annualRate / 12 / 100;
@@ -2192,25 +2273,11 @@ function submitLoanApplication(){
     ? Math.ceil(amount * r * Math.pow(1+r, tenure) / (Math.pow(1+r, tenure) - 1))
     : Math.ceil(amount / tenure);
   const totalPayable = emi * tenure;
-
   const loanId = 'LN'+Date.now().toString(36).toUpperCase();
-  DB.loans.push({
-    id: loanId,
-    userId: currentUser.id,
-    amount,
-    paid: 0,
-    date: now(),
-    status: 'active',
-    desc: purpose,
-    tenure,
-    emi,
-    totalPayable,
-    interestRate: annualRate,
-    appliedByUser: true
-  });
+  DB.loans.push({ id:loanId, userId:currentUser.id, amount, paid:0, date:now(), status:'active', desc:purpose, tenure, emi, totalPayable, interestRate:annualRate, appliedByUser:true });
   DB.transactions.push({ id:uuid(), userId:currentUser.id, type:'debit', amount, note:`Loan applied: ${loanId}. ${purpose}`, date:now() });
   saveDB();
-  toast(`Loan application submitted! EMI: ${formatCur(emi)}/month`, 'success');
+  toast(`✅ Loan of ₹${amount.toLocaleString('en-IN')} applied! EMI: ₹${emi.toLocaleString('en-IN')}/month`, 'success', 5000);
   navigate('my-loans');
 }
 
@@ -2285,28 +2352,36 @@ function renderUserProfile(){
 }
 
 function saveUserProfile(){
-  const user = DB.users.find(u=>u.id===currentUser.id);
-  if(!user) return;
-  const name = document.getElementById('up-name').value.trim();
+  const user  = DB.users.find(u=>u.id===currentUser.id);
+  if(!user){ toast('❌ User account not found', 'error'); return; }
+  const name  = document.getElementById('up-name').value.trim();
   const phone = document.getElementById('up-phone').value.trim();
   const newId = document.getElementById('up-newid').value.trim().toUpperCase();
   const curPw = document.getElementById('up-curpw').value;
   const newPw = document.getElementById('up-newpw').value;
-  if(name) user.name = name;
-  user.phone = phone;
+  if(!name){ toast('⚠️ Name cannot be empty', 'warning'); return; }
+  if(phone && !/^\d{10}$/.test(phone)){ toast('⚠️ Phone must be 10 digits', 'warning'); return; }
   if(newId){
-    if(DB.users.find(u=>u.id===newId&&u.id!==currentUser.id)||DB.admins.find(a=>a.id===newId)){ toast('ID already taken','error'); return; }
+    if(newId.length < 3){ toast('⚠️ New ID must be at least 3 characters', 'warning'); return; }
+    if(DB.users.find(u=>u.id===newId&&u.id!==currentUser.id)){ toast(`❌ User ID "${newId}" is already taken`, 'error'); return; }
+    if(DB.admins.find(a=>a.id===newId)){ toast(`❌ ID "${newId}" is reserved for admin`, 'error'); return; }
     user.id = newId;
+    toast(`✅ Login ID changed to "${newId}"`, 'info');
   }
   if(newPw){
-    if(!curPw){ toast('Enter current password to change it','error'); return; }
-    if(curPw !== user.password){ toast('Current password is incorrect','error'); return; }
+    if(!curPw){ toast('⚠️ Enter your current password to change it', 'warning'); return; }
+    if(curPw !== user.password){ toast('❌ Current password is incorrect', 'error'); return; }
+    if(newPw.length < 4){ toast('⚠️ New password must be at least 4 characters', 'warning'); return; }
+    if(newPw === curPw){ toast('⚠️ New password must be different from current', 'warning'); return; }
     user.password = newPw;
+    toast('🔐 Password changed successfully', 'info');
   }
+  user.name = name;
+  user.phone = phone;
   currentUser = user;
   document.getElementById('sidebar-username').textContent = user.name;
   document.getElementById('sidebar-avatar').textContent = user.name[0];
-  saveDB(); toast('Profile updated!','success');
+  saveDB(); toast('✅ Profile updated successfully', 'success');
 }
 
 // ============================================================
