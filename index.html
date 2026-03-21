@@ -477,6 +477,7 @@ tr:hover td { background:rgba(201,168,76,0.04); }
       <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
         Secured by Dhelana Youth Bank • Version 1.0
       </div>
+      <div id="gh-login-status" style="text-align:center;margin-top:10px;font-size:11px;padding:6px 12px;border-radius:8px;display:none"></div>
     </div>
   </div>
 
@@ -536,20 +537,28 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 // ============================================================
 // GITHUB DATA STORE CONFIG
 // ============================================================
-// TO USE: Set your GitHub token, repo owner, repo name, and file path below.
-// The token needs "repo" scope. Store data as a JSON file in your repo.
-// ============================================================
 const GITHUB_CONFIG = {
-  token: '',          // YOUR GitHub Personal Access Token (Settings > Developer > Tokens)
-  owner: '',          // GitHub username or org
-  repo: '',           // Repository name
-  path: 'bank-data.json',   // File path in repo
+  token: '',
+  owner: '',
+  repo: '',
+  path: 'bank-data.json',
   branch: 'main'
 };
 
-let DB = null; // Loaded from GitHub or localStorage fallback
+// Load saved GitHub config IMMEDIATELY before anything else runs
+(()=>{
+  try {
+    const saved = localStorage.getItem('dhelana_github_config');
+    if(saved){
+      const c = JSON.parse(saved);
+      Object.assign(GITHUB_CONFIG, c);
+    }
+  } catch(e){}
+})();
+
+let DB = null;
 let currentUser = null;
-let currentRole = null; // 'admin' | 'user'
+let currentRole = null;
 let currentTab = 'user';
 let activePage = 'overview';
 
@@ -589,7 +598,26 @@ window.addEventListener('load', async ()=>{
   setTimeout(()=>{
     const loader = document.getElementById('loader');
     loader.style.opacity = '0';
-    setTimeout(()=>{ loader.style.display='none'; }, 800);
+    setTimeout(()=>{
+      loader.style.display='none';
+      // Show GitHub connection status on login page
+      const el = document.getElementById('gh-login-status');
+      if(el){
+        if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
+          el.style.display='block';
+          el.style.background='rgba(46,204,113,0.1)';
+          el.style.border='1px solid rgba(46,204,113,0.2)';
+          el.style.color='#2ECC71';
+          el.textContent = `🐙 GitHub Connected: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`;
+        } else {
+          el.style.display='block';
+          el.style.background='rgba(231,76,60,0.08)';
+          el.style.border='1px solid rgba(231,76,60,0.15)';
+          el.style.color='#E74C3C';
+          el.textContent = '⚠️ GitHub not configured — data saves locally only';
+        }
+      }
+    }, 800);
   }, 2200);
 });
 
@@ -613,62 +641,109 @@ function defaultDB(){
 }
 
 async function loadDB(){
+  const def = defaultDB();
+
   if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
     try {
-      const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
-        headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github.v3+json' }
-      });
+      const res = await fetch(
+        `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`,
+        { headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github.v3+json', 'Cache-Control': 'no-cache' } }
+      );
       if(res.ok){
         const data = await res.json();
-        DB = JSON.parse(atob(data.content));
+        let parsed = {};
+        try { parsed = JSON.parse(atob(data.content.replace(/\n/g,''))); } catch(e){ parsed = {}; }
+
+        // If file is empty {} or missing required keys, use defaultDB as base
+        if(!parsed.admins && !parsed.users){
+          DB = def;
+        } else {
+          DB = parsed;
+        }
         DB._sha = data.sha;
+
+        // Merge in any missing fields
+        DB.settings = Object.assign({}, def.settings, DB.settings||{});
+        if(!DB.admins || DB.admins.length===0) DB.admins = def.admins;
+        if(!DB.users) DB.users = def.users;
+        if(!DB.transactions) DB.transactions = [];
+        if(!DB.loans) DB.loans = [];
+        if(!DB.penalties) DB.penalties = [];
+        if(!DB.sharePayments) DB.sharePayments = [];
+        if(!DB.monthlyPayments) DB.monthlyPayments = [];
+        console.log('✅ Loaded from GitHub. Users:', DB.users.length);
         return;
+      } else {
+        console.log('GitHub load failed with status:', res.status);
       }
-    } catch(e){ console.log('GitHub load failed, using localStorage'); }
+    } catch(e){ console.log('GitHub load error:', e.message); }
   }
+
   // Fallback: localStorage
   const saved = localStorage.getItem('dhelana_bank_db');
-  DB = saved ? JSON.parse(saved) : defaultDB();
-  // Ensure all fields exist (merge defaults)
-  const def = defaultDB();
-  if(!DB.settings) DB.settings = def.settings;
-  else DB.settings = Object.assign({}, def.settings, DB.settings);
-  if(!DB.admins) DB.admins = def.admins;
-  if(!DB.users) DB.users = def.users;
+  DB = saved ? JSON.parse(saved) : def;
+  DB.settings = Object.assign({}, def.settings, DB.settings||{});
+  if(!DB.admins || DB.admins.length===0) DB.admins = def.admins;
+  if(!DB.users) DB.users = [];
   if(!DB.transactions) DB.transactions = [];
   if(!DB.loans) DB.loans = [];
   if(!DB.penalties) DB.penalties = [];
   if(!DB.sharePayments) DB.sharePayments = [];
   if(!DB.monthlyPayments) DB.monthlyPayments = [];
+  console.log('📦 Loaded from localStorage. Users:', DB.users.length);
 }
 
 async function saveDB(){
-  const sha = DB._sha;
+  // Always save to localStorage as backup
   const payload = {...DB}; delete payload._sha;
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+  localStorage.setItem('dhelana_bank_db', JSON.stringify(payload));
+
   if(GITHUB_CONFIG.token && GITHUB_CONFIG.owner && GITHUB_CONFIG.repo){
     try {
-      const body = {
-        message: `Bank data update ${new Date().toISOString()}`,
-        content,
-        branch: GITHUB_CONFIG.branch
-      };
-      if(sha) body.sha = sha;
-      const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`, {
-        method:'PUT', headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' },
-        body: JSON.stringify(body)
-      });
-      if(res.ok){
-        const d = await res.json();
-        DB._sha = d.content.sha;
-        toast('Data saved to GitHub ✓', 'success');
-        return;
+      // Always fetch the latest SHA before saving to avoid conflicts
+      const getRes = await fetch(
+        `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`,
+        { headers: { 'Authorization': `token ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github.v3+json', 'Cache-Control': 'no-cache' } }
+      );
+
+      let latestSha = DB._sha || null;
+      if(getRes.ok){
+        const existing = await getRes.json();
+        latestSha = existing.sha; // Always use the freshest SHA
       }
-    } catch(e){ console.log('GitHub save failed'); }
+
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+      const body = {
+        message: `Bank update: ${new Date().toLocaleString('en-IN')}`,
+        content,
+        branch: GITHUB_CONFIG.branch || 'main'
+      };
+      if(latestSha) body.sha = latestSha;
+
+      const putRes = await fetch(
+        `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`,
+        { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_CONFIG.token}`, 'Content-Type':'application/json', 'Accept':'application/vnd.github.v3+json' }, body: JSON.stringify(body) }
+      );
+
+      if(putRes.ok){
+        const d = await putRes.json();
+        DB._sha = d.content.sha;
+        toast('✅ Saved to GitHub', 'success');
+        return;
+      } else {
+        const err = await putRes.json();
+        console.error('GitHub save error:', err);
+        if(putRes.status === 401) toast('❌ GitHub: Invalid token — go to GitHub Config', 'error');
+        else if(putRes.status === 404) toast('❌ GitHub: Repo/file not found — check GitHub Config', 'error');
+        else if(putRes.status === 409) toast('⚠️ GitHub conflict — retrying...', 'info');
+        else toast(`❌ GitHub error ${putRes.status} — saved locally`, 'error');
+      }
+    } catch(e){
+      console.error('GitHub save exception:', e);
+      toast('⚠️ GitHub unreachable — saved locally', 'info');
+    }
   }
-  // Fallback localStorage
-  localStorage.setItem('dhelana_bank_db', JSON.stringify(payload));
-  toast('Data saved locally ✓', 'success');
+  toast('💾 Saved locally (GitHub not configured)', 'info');
 }
 
 // ============================================================
@@ -1765,10 +1840,16 @@ function saveGithubConfig(){
   GITHUB_CONFIG.repo = document.getElementById('gh-repo').value.trim();
   GITHUB_CONFIG.branch = document.getElementById('gh-branch').value.trim()||'main';
   GITHUB_CONFIG.path = document.getElementById('gh-path').value.trim()||'bank-data.json';
+
+  // Save to localStorage so it persists across sessions
   localStorage.setItem('dhelana_github_config', JSON.stringify({
-    token: GITHUB_CONFIG.token, owner: GITHUB_CONFIG.owner, repo: GITHUB_CONFIG.repo, branch: GITHUB_CONFIG.branch, path: GITHUB_CONFIG.path
+    token: GITHUB_CONFIG.token,
+    owner: GITHUB_CONFIG.owner,
+    repo: GITHUB_CONFIG.repo,
+    branch: GITHUB_CONFIG.branch,
+    path: GITHUB_CONFIG.path
   }));
-  toast('GitHub config saved!','success');
+  toast('✅ GitHub config saved! Now click Push Data Now.', 'success');
 }
 
 async function testGithubConnection(){
@@ -1789,19 +1870,12 @@ async function testGithubConnection(){
 }
 
 async function pushToGithub(){
-  document.getElementById('gh-status').innerHTML = '<span style="color:var(--gold)">⬆️ Pushing data to GitHub...</span>';
+  const statusEl = document.getElementById('gh-status');
+  statusEl.innerHTML = '<span style="color:var(--gold)">⬆️ Pushing all data to GitHub...</span>';
+  DB._sha = null; // Force fresh SHA fetch
   await saveDB();
-  document.getElementById('gh-status').innerHTML = '<span style="color:var(--green)">✅ Data pushed to GitHub!</span>';
+  statusEl.innerHTML = '<span style="color:var(--green)">✅ All data pushed to GitHub successfully! Check your repo to verify.</span>';
 }
-
-// Load GitHub config from localStorage on startup
-(()=>{
-  const saved = localStorage.getItem('dhelana_github_config');
-  if(saved){
-    const c = JSON.parse(saved);
-    Object.assign(GITHUB_CONFIG, c);
-  }
-})();
 
 // ============================================================
 // USER PAGES
