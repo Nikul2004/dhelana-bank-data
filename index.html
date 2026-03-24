@@ -82,7 +82,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--navy); color:var(--cre
 .nav-item:hover { background:rgba(201,168,76,0.08); color:var(--cream); }
 .nav-item.active { background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.06)); color:var(--gold); border-left-color:var(--gold); }
 .nav-item .nav-icon { width:18px; text-align:center; font-size:15px; }
-.nav-item .badge { margin-left:auto; background:var(--red); color:#fff; font-size:9px; font-weight:700; padding:2px 6px; border-radius:10px; }
 .sidebar-footer { padding:12px 10px; border-top:1px solid rgba(201,168,76,0.1); }
 .user-info-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; background:rgba(255,255,255,0.04); border-radius:10px; margin-bottom:8px; }
 .user-avatar { width:34px; height:34px; background:linear-gradient(135deg,var(--gold-dark),var(--gold)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--navy); flex-shrink:0; }
@@ -192,9 +191,6 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 .fd-card { background:linear-gradient(135deg,rgba(155,89,182,0.15),rgba(155,89,182,0.05)); border:1px solid rgba(155,89,182,0.25); border-radius:14px; padding:20px; }
 .goal-card { background:linear-gradient(135deg,rgba(26,188,156,0.12),rgba(26,188,156,0.04)); border:1px solid rgba(26,188,156,0.25); border-radius:14px; padding:20px; }
 
-/* PASSBOOK */
-@media print { .sidebar,.main-content>.page-header,.data-card-header button,.btn-sm { display:none !important; } .main-content { margin:0; padding:0; } }
-
 /* MOBILE */
 .mobile-menu-btn { display:none; position:fixed; top:14px; left:14px; z-index:200; width:42px; height:42px; background:var(--navy-mid); border:1px solid rgba(201,168,76,0.3); border-radius:10px; align-items:center; justify-content:center; cursor:pointer; font-size:18px; }
 @media(max-width:768px) { .sidebar{transform:translateX(-100%)} .sidebar.open{transform:translateX(0)} .main-content{margin-left:0;padding:16px;padding-top:66px} .mobile-menu-btn{display:flex} .grid-2,.form-row{grid-template-columns:1fr} .stats-grid{grid-template-columns:1fr 1fr} }
@@ -223,7 +219,6 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 <!-- FIREBASE SETUP WIZARD -->
 <div id="firebase-setup">
   <div class="setup-card">
-    <!-- Step 1: Welcome -->
     <div class="setup-step active" id="setup-step-1">
       <div style="text-align:center;margin-bottom:28px">
         <div style="font-size:52px;margin-bottom:12px">🔥</div>
@@ -243,7 +238,6 @@ tr:hover td { background:rgba(201,168,76,0.04); }
       <button class="btn-primary" onclick="goSetupStep(2)">Next → Paste Config</button>
     </div>
 
-    <!-- Step 2: Config -->
     <div class="setup-step" id="setup-step-2">
       <div style="text-align:center;margin-bottom:24px">
         <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold-light)">⚙️ Firebase Configuration</div>
@@ -266,7 +260,6 @@ tr:hover td { background:rgba(201,168,76,0.04); }
       </div>
     </div>
 
-    <!-- Step 3: Success -->
     <div class="setup-step" id="setup-step-3">
       <div style="text-align:center;padding:20px 0">
         <div style="font-size:60px;margin-bottom:16px;animation:logoSpin 0.8s ease">✅</div>
@@ -349,13 +342,12 @@ tr:hover td { background:rgba(201,168,76,0.04); }
 <!-- FIREBASE SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // ──────────────────────────────────────────────
-// FIREBASE CONFIG — paste your values here
-// or use the in-app setup wizard
+// FIREBASE CONFIG — hardcoded, no manual entry needed
 // ──────────────────────────────────────────────
-let FIREBASE_CONFIG = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyACTsAMNkzGH5BVCnYBSvE1bpLKR8C-6j0",
   authDomain: "dhelana-youth-mandale.firebaseapp.com",
   projectId: "dhelana-youth-mandale",
@@ -363,6 +355,11 @@ let FIREBASE_CONFIG = {
   messagingSenderId: "216606068126",
   appId: "1:216606068126:web:4dc461ec58dc08c4339a8f"
 };
+
+// ──────────────────────────────────────────────
+// SESSION KEY for localStorage
+// ──────────────────────────────────────────────
+const SESSION_KEY = 'dyb_session';
 
 // ──────────────────────────────────────────────
 // STATE
@@ -375,7 +372,6 @@ let currentRole = null;
 let currentTab  = 'user';
 let activePage  = 'overview';
 let isSaving    = false;
-const DOC_PATH  = 'dhelana-bank/main-data';
 
 // ──────────────────────────────────────────────
 // PARTICLES
@@ -400,7 +396,6 @@ function now(){ return new Date().toISOString(); }
 function uid(){ return 'ID'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase(); }
 function totalLoanBal(userId){ return (DB.loans||[]).filter(l=>l.userId===userId&&l.status==='active').reduce((a,l)=>a+(l.amount-l.paid),0); }
 function totalPenalty(userId){ return (DB.penalties||[]).filter(p=>p.userId===userId&&p.status!=='paid').reduce((a,p)=>a+p.amount,0); }
-function getUserShares(userId){ const u=(DB.users||[]).find(u=>u.id===userId); return u?u.shares||0:0; }
 
 function defaultDB(){
   return {
@@ -411,13 +406,45 @@ function defaultDB(){
 }
 
 // ──────────────────────────────────────────────
+// SESSION PERSISTENCE
+// ──────────────────────────────────────────────
+function saveSession(user, role){
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: user.id, role }));
+  } catch(e){}
+}
+
+function clearSession(){
+  try { localStorage.removeItem(SESSION_KEY); } catch(e){}
+}
+
+function restoreSession(){
+  try {
+    const s = localStorage.getItem(SESSION_KEY);
+    if(!s) return false;
+    const { userId, role } = JSON.parse(s);
+    if(!DB) return false;
+    if(role === 'admin'){
+      const a = (DB.admins||[]).find(x => x.id === userId);
+      if(!a) return false;
+      currentUser = a; currentRole = 'admin';
+      return true;
+    } else {
+      const u = (DB.users||[]).find(x => x.id === userId);
+      if(!u || u.status === 'inactive') return false;
+      currentUser = u; currentRole = 'user';
+      return true;
+    }
+  } catch(e){ return false; }
+}
+
+// ──────────────────────────────────────────────
 // FIREBASE INIT
 // ──────────────────────────────────────────────
 async function initFirebase(config){
   try {
     fbApp = initializeApp(config);
     db = getFirestore(fbApp);
-    // Test connection
     const ref = doc(db, 'dhelana-bank', 'main-data');
     await getDoc(ref);
     return true;
@@ -438,13 +465,11 @@ async function loadDB(){
       DB = def;
       await saveDB();
     }
-    // Cache locally
     try{ localStorage.setItem('dyb_cache', JSON.stringify(DB)); }catch(e){}
     updateFBStatus(true);
     return true;
   } catch(e){
     console.error('loadDB error:',e);
-    // Try local cache
     try{ const c=localStorage.getItem('dyb_cache'); if(c){ DB=JSON.parse(c); return true; } }catch(e2){}
     DB = defaultDB();
     updateFBStatus(false);
@@ -498,7 +523,6 @@ window.saveAndTestFirebase = async function(){
   const ok = await initFirebase(cfg);
   if(ok){
     await loadDB();
-    // Save config to localStorage
     localStorage.setItem('dyb_fb_config', JSON.stringify(cfg));
     status.innerHTML='<span style="color:var(--green)">✅ Connected!</span>';
     setTimeout(()=> goSetupStep(3), 600);
@@ -509,44 +533,47 @@ window.saveAndTestFirebase = async function(){
 
 window.startApp = function(){
   document.getElementById('firebase-setup').classList.remove('active');
-  document.getElementById('app').style.display='block';
-  document.getElementById('login-page').style.display='flex';
+  showLoginPage();
 };
 
+function showLoginPage(){
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
 // ──────────────────────────────────────────────
-// BOOT
+// BOOT — with session restore
 // ──────────────────────────────────────────────
 window.addEventListener('load', async ()=>{
   const loaderSub = document.getElementById('loader-sub');
+  if(loaderSub) loaderSub.textContent = 'Loading bank data...';
 
-  // Try saved config first
-  let savedConfig = null;
-  try{ const s=localStorage.getItem('dyb_fb_config'); if(s) savedConfig=JSON.parse(s); }catch(e){}
-
-  // Also try hardcoded config
-  const hardcoded = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId;
-
-  if(hardcoded || savedConfig){
-    const cfg = hardcoded ? FIREBASE_CONFIG : savedConfig;
-    if(loaderSub) loaderSub.textContent = 'Loading bank data...';
-    const ok = await initFirebase(cfg);
-    if(ok){
-      await loadDB();
-      setTimeout(()=>{
-        const loader=document.getElementById('loader');
-        loader.style.opacity='0';
-        setTimeout(()=>{ loader.style.display='none'; document.getElementById('app').style.display='block'; document.getElementById('login-page').style.display='flex'; },700);
-      },2200);
-      return;
-    }
+  const ok = await initFirebase(FIREBASE_CONFIG);
+  if(ok){
+    await loadDB();
+  } else {
+    // Try local cache
+    try{ const c=localStorage.getItem('dyb_cache'); if(c){ DB=JSON.parse(c); } else { DB=defaultDB(); } }catch(e){ DB=defaultDB(); }
+    updateFBStatus(false);
   }
 
-  // No config — show setup wizard
   setTimeout(()=>{
-    const loader=document.getElementById('loader');
-    loader.style.opacity='0';
-    setTimeout(()=>{ loader.style.display='none'; document.getElementById('firebase-setup').classList.add('active'); },700);
-  },2000);
+    const loader = document.getElementById('loader');
+    loader.style.opacity = '0';
+    setTimeout(()=>{
+      loader.style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+
+      // ── TRY RESTORE SESSION ──
+      if(restoreSession()){
+        openDashboard();
+        toast(`👋 Welcome back, ${currentUser.name}!`, 'info');
+      } else {
+        showLoginPage();
+      }
+    }, 700);
+  }, 2200);
 });
 
 // ──────────────────────────────────────────────
@@ -569,13 +596,17 @@ window.doLogin = function(){
     const a=(DB.admins||[]).find(x=>x.id===id);
     if(!a){ showLoginError('Admin ID not found'); toast('❌ Admin ID not found','error'); return; }
     if(a.password!==pw){ showLoginError('Wrong password'); toast('❌ Incorrect password','error'); return; }
-    currentUser=a; currentRole='admin'; toast(`✅ Welcome, ${a.name}!`,'success');
+    currentUser=a; currentRole='admin';
+    saveSession(a,'admin');
+    toast(`✅ Welcome, ${a.name}!`,'success');
   } else {
     const u=(DB.users||[]).find(x=>x.id===id);
     if(!u){ showLoginError('User ID not found. Contact admin.'); toast(`❌ User ID "${id}" not found`,'error'); return; }
     if(u.password!==pw){ showLoginError('Wrong password'); toast('❌ Incorrect password','error'); return; }
     if(u.status==='inactive'){ showLoginError('Account deactivated. Contact admin.'); return; }
-    currentUser=u; currentRole='user'; toast(`✅ Welcome, ${u.name}!`,'success');
+    currentUser=u; currentRole='user';
+    saveSession(u,'user');
+    toast(`✅ Welcome, ${u.name}!`,'success');
   }
   openDashboard();
 };
@@ -586,8 +617,10 @@ function showLoginError(msg){
 }
 
 window.doLogout = function(){
+  clearSession(); // ← clear saved session on explicit logout
   currentUser=null; currentRole=null;
-  document.getElementById('login-userid').value=''; document.getElementById('login-password').value='';
+  document.getElementById('login-userid').value='';
+  document.getElementById('login-password').value='';
   document.getElementById('login-error').style.display='none';
   document.getElementById('dashboard').style.display='none';
   document.getElementById('login-page').style.display='flex';
@@ -1139,9 +1172,9 @@ function renderAdminFD(){
     </tbody></table></div>
   </div>`;
 }
+
 function renderUserFD(){
   const myFD=(DB.fixedDeposits||[]).filter(f=>f.userId===currentUser.id);
-  const active=myFD.filter(f=>f.status==='active');
   const rates=DB.settings.fdRates||{3:5,6:6.5,12:7.5,24:8.5,36:9};
   return `
   <div class="page-header"><div class="page-title">My Fixed Deposits</div></div>
@@ -1245,7 +1278,7 @@ window.deleteFD = async function(fdId){
 function renderUserGoals(){
   const goals=(DB.savingsGoals||[]).filter(g=>g.userId===currentUser.id);
   return `
-  <div class="page-header"><div class="page-title">Savings Goals 🎯</div><div class="page-subtitle">Set targets and track your savings progress</div></div>
+  <div class="page-header"><div class="page-title">Savings Goals 🎯</div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:20px">
     ${goals.map(g=>{
       const pct=Math.min(100,(g.saved/g.target)*100);
@@ -1324,9 +1357,8 @@ window.deleteGoal = async function(goalId){
 // ══════════════════════════════════════════════
 function renderInterestCalc(){
   return `
-  <div class="page-header"><div class="page-title">Interest Calculator 🧮</div><div class="page-subtitle">Calculate EMI, FD returns, and compare loan options</div></div>
+  <div class="page-header"><div class="page-title">Interest Calculator 🧮</div></div>
   <div class="grid-2">
-    <!-- EMI CALCULATOR -->
     <div class="data-card">
       <div class="data-card-header"><div class="data-card-title">📅 Loan EMI Calculator</div></div>
       <div style="padding:22px">
@@ -1336,7 +1368,6 @@ function renderInterestCalc(){
         <div id="emi-result" style="margin-top:16px"></div>
       </div>
     </div>
-    <!-- FD CALCULATOR -->
     <div class="data-card">
       <div class="data-card-header"><div class="data-card-title">🔒 FD Returns Calculator</div></div>
       <div style="padding:22px">
@@ -1347,9 +1378,8 @@ function renderInterestCalc(){
       </div>
     </div>
   </div>
-  <!-- COMPARISON -->
   <div class="data-card">
-    <div class="data-card-header"><div class="data-card-title">⚖️ Loan Comparison (Same Amount, Different Tenures)</div></div>
+    <div class="data-card-header"><div class="data-card-title">⚖️ Loan Comparison</div></div>
     <div style="padding:22px">
       <div class="form-row">
         <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="cmp-amt" placeholder="Amount" oninput="calcComparison()"/></div>
@@ -1412,7 +1442,7 @@ window.calcComparison = function(){
 // ══════════════════════════════════════════════
 function renderPassbook(){
   return `
-  <div class="page-header"><div class="page-title">Member Passbook 📒</div><div class="page-subtitle">Generate detailed account statement for any member</div></div>
+  <div class="page-header"><div class="page-title">Member Passbook 📒</div></div>
   <div class="data-card" style="margin-bottom:16px">
     <div class="data-card-header"><div class="data-card-title">Select Member</div></div>
     <div style="padding:20px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
@@ -1446,10 +1476,8 @@ window.generatePassbook = function(){
   }).join('');
   const loans=DB.loans.filter(l=>l.userId===userId);
   const fds=(DB.fixedDeposits||[]).filter(f=>f.userId===userId);
-  const goals=(DB.savingsGoals||[]).filter(g=>g.userId===userId);
   document.getElementById('passbook-output').innerHTML=`
     <div id="passbook-print-area">
-      <!-- HEADER -->
       <div class="data-card" style="margin-bottom:16px">
         <div style="padding:24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
           <div>
@@ -1471,7 +1499,6 @@ window.generatePassbook = function(){
           <div style="text-align:center;background:rgba(155,89,182,0.08);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:14px"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Loan Balance</div><div style="font-weight:700;color:var(--red);font-size:16px">${fmtC(totalLoanBal(userId))}</div></div>
         </div>
       </div>
-      <!-- TRANSACTIONS -->
       <div class="data-card" style="margin-bottom:16px">
         <div class="data-card-header"><div class="data-card-title">Transaction History (${txns.length} records)</div></div>
         <div class="data-card-body">
@@ -1480,9 +1507,7 @@ window.generatePassbook = function(){
           </table>
         </div>
       </div>
-      <!-- LOANS -->
       ${loans.length?`<div class="data-card" style="margin-bottom:16px"><div class="data-card-header"><div class="data-card-title">Loans (${loans.length})</div></div><div class="data-card-body"><table><thead><tr><th>Loan ID</th><th>Amount</th><th>EMI</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>${loans.map(l=>`<tr><td style="color:var(--gold);font-size:11px">${l.id}</td><td class="amount-gold">${fmtC(l.amount)}</td><td>${l.emi?fmtC(l.emi):'—'}</td><td class="amount-positive">${fmtC(l.paid)}</td><td class="${(l.amount-l.paid)>0?'amount-negative':'amount-positive'}">${fmtC(l.amount-l.paid)}</td><td><span class="badge-status ${l.status==='active'?'badge-pending':'badge-closed'}">${l.status}</span></td></tr>`).join('')}</tbody></table></div></div>`:''}
-      <!-- FDs -->
       ${fds.length?`<div class="data-card" style="margin-bottom:16px"><div class="data-card-header"><div class="data-card-title">Fixed Deposits (${fds.length})</div></div><div class="data-card-body"><table><thead><tr><th>FD ID</th><th>Principal</th><th>Rate</th><th>Tenure</th><th>Maturity</th><th>Status</th></tr></thead><tbody>${fds.map(f=>`<tr><td style="color:var(--purple);font-size:11px">${f.id}</td><td class="amount-gold">${fmtC(f.principal)}</td><td>${f.rate}%</td><td>${f.tenure} mo</td><td class="amount-positive">${fmtC(f.maturityAmount)}</td><td><span class="badge-status ${f.status==='active'?'badge-pending':'badge-matured'}">${f.status}</span></td></tr>`).join('')}</tbody></table></div></div>`:''}
     </div>`;
   toast(`✅ Passbook generated for ${u.name}`,'success');
@@ -1626,7 +1651,7 @@ window.saveMonthlyPayment = async function(){
   DB.monthlyPayments.push({id:uid(),userId,month,amount,status,paidDate:status==='paid'?today():null});
   if(status==='paid') DB.transactions.push({id:uid(),userId,type:'credit',amount,note:`Monthly: ${month}`,date:now()});
   await saveDB(); closeModal(); navigate('monthly');
-  const u=DB.users.find(u=>u.id===userId); toast(`✅ Monthly payment for ${month} recorded`,'success');
+  toast(`✅ Monthly payment for ${month} recorded`,'success');
 };
 window.markMonthlyPaid = async function(id){
   const mp=(DB.monthlyPayments||[]).find(m=>m.id===id); if(!mp) return;
@@ -1737,6 +1762,7 @@ window.saveAdminProfile = async function(){
   if(newId){if(DB.admins.find(a=>a.id===newId&&a.id!==currentUser.id)){toast(`❌ ID taken`,'error');return;} admin.id=newId; toast(`✅ ID changed to ${newId}`,'info');}
   if(newPw){if(newPw.length<4){toast('⚠️ Min 4 chars','warning');return;} admin.password=newPw; toast('🔐 Password updated','info');}
   admin.name=name; currentUser=admin;
+  saveSession(admin,'admin');
   document.getElementById('sidebar-username').textContent=admin.name;
   document.getElementById('sidebar-avatar').textContent=admin.name[0];
   await saveDB(); toast('✅ Profile updated','success');
@@ -1746,10 +1772,26 @@ window.saveAdminProfile = async function(){
 // FIREBASE CONFIG PAGE
 // ══════════════════════════════════════════════
 function renderFirebaseConfig(){
-  let saved={}; try{const s=localStorage.getItem('dyb_fb_config');if(s)saved=JSON.parse(s);}catch(e){}
   const connected=!!(db);
   return `
-  <div class="page-header"><div class="page-title">Firebase Config 🔥</div><div class="page-subtitle">Manage your Firebase connection</div></div>
+  <div class="page-header"><div class="page-title">Firebase Config 🔥</div></div>
+
+  <!-- ENABLE FIRESTORE GUIDE -->
+  <div class="data-card" style="margin-bottom:16px;border-color:rgba(52,152,219,0.3)">
+    <div class="data-card-header" style="background:rgba(52,152,219,0.06)"><div class="data-card-title" style="color:var(--blue-accent)">📋 How to Enable Firestore (if you see a Firebase error)</div></div>
+    <div style="padding:20px;font-size:13px;line-height:2.2;color:var(--text-muted)">
+      <div><strong style="color:var(--cream)">Step 1:</strong> Go to <a href="https://console.firebase.google.com/project/dhelana-youth-mandale/firestore" target="_blank" style="color:var(--gold);text-decoration:underline">Firebase Console → Firestore Database</a></div>
+      <div><strong style="color:var(--cream)">Step 2:</strong> Click <strong style="color:var(--green)">"Create database"</strong></div>
+      <div><strong style="color:var(--cream)">Step 3:</strong> Select <strong style="color:var(--green)">"Start in test mode"</strong> → Next</div>
+      <div><strong style="color:var(--cream)">Step 4:</strong> Choose any location (e.g. <code style="color:var(--gold)">asia-south1</code> for India) → Enable</div>
+      <div><strong style="color:var(--cream)">Step 5:</strong> Wait ~30 seconds, then reload this page</div>
+      <div style="margin-top:12px;padding:12px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.2);border-radius:8px">
+        ✅ <strong style="color:var(--green)">Your Firebase project is:</strong> <code style="color:var(--gold)">dhelana-youth-mandale</code>
+        <br>🔗 Direct link: <a href="https://console.firebase.google.com/project/dhelana-youth-mandale/firestore" target="_blank" style="color:var(--gold)">console.firebase.google.com/project/dhelana-youth-mandale/firestore</a>
+      </div>
+    </div>
+  </div>
+
   <div class="data-card" style="margin-bottom:16px">
     <div class="data-card-header"><div class="data-card-title">Connection Status</div></div>
     <div style="padding:20px">
@@ -1757,67 +1799,22 @@ function renderFirebaseConfig(){
         <div style="font-size:32px">${connected?'✅':'❌'}</div>
         <div>
           <div style="font-size:15px;font-weight:700;color:${connected?'var(--green)':'var(--red)'}">${connected?'Connected to Firebase':'Not Connected'}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${connected?`Project: <strong style="color:var(--cream)">${saved.projectId||'—'}</strong>  |  Real-time sync active`:'Configure your Firebase project below'}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Project: <strong style="color:var(--cream)">dhelana-youth-mandale</strong></div>
         </div>
         ${connected?`<div style="margin-left:auto;display:flex;gap:8px"><button class="btn-sm btn-success" onclick="pushToFirebase()">⬆️ Push Data</button><button class="btn-sm btn-info" onclick="pullFromFirebase()">⬇️ Pull Data</button></div>`:''}
       </div>
     </div>
   </div>
   <div class="data-card">
-    <div class="data-card-header"><div class="data-card-title">⚙️ Update Firebase Config</div></div>
-    <div style="padding:24px">
-      <div class="form-group"><label>API Key</label><input type="password" id="fb2-apikey" value="${saved.apiKey||''}" placeholder="AIzaSy..."/></div>
-      <div class="form-row">
-        <div class="form-group"><label>Auth Domain</label><input id="fb2-authdomain" value="${saved.authDomain||''}" placeholder="app.firebaseapp.com"/></div>
-        <div class="form-group"><label>Project ID</label><input id="fb2-projectid" value="${saved.projectId||''}" placeholder="app-12345"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Storage Bucket</label><input id="fb2-storagebucket" value="${saved.storageBucket||''}" placeholder="app.appspot.com"/></div>
-        <div class="form-group"><label>Messaging Sender ID</label><input id="fb2-senderid" value="${saved.messagingSenderId||''}" placeholder="123456789"/></div>
-      </div>
-      <div class="form-group"><label>App ID</label><input id="fb2-appid" value="${saved.appId||''}" placeholder="1:123:web:abc"/></div>
-      <div id="fb2-status" style="font-size:12px;min-height:18px;margin-bottom:12px;color:var(--text-muted)"></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-primary" style="max-width:180px" onclick="updateFirebaseConfig()">💾 Save & Reconnect</button>
-        <button class="btn-sm btn-danger" onclick="clearFirebaseConfig()">🗑️ Clear Config</button>
-      </div>
-    </div>
-  </div>
-  <div class="data-card" style="margin-top:16px">
-    <div class="data-card-header"><div class="data-card-title">ℹ️ Firestore Security Rules</div></div>
+    <div class="data-card-header"><div class="data-card-title">ℹ️ Firestore Security Rules (for production)</div></div>
     <div style="padding:20px;font-size:13px;color:var(--text-muted);line-height:1.8">
-      For production, update your Firestore rules to:<br>
-      <code style="background:rgba(255,255,255,0.06);padding:12px;border-radius:8px;display:block;margin-top:10px;font-size:12px;color:var(--cream)">rules_version = '2';<br>service cloud.firestore {<br>  match /databases/{database}/documents {<br>    match /dhelana-bank/{document=**} {<br>      allow read, write: if true; // Replace with proper auth rules<br>    }<br>  }<br>}</code>
+      After testing, update your Firestore rules to restrict access:
+      <code style="background:rgba(255,255,255,0.06);padding:12px;border-radius:8px;display:block;margin-top:10px;font-size:12px;color:var(--cream)">rules_version = '2';<br>service cloud.firestore {<br>  match /databases/{database}/documents {<br>    match /dhelana-bank/{document=**} {<br>      allow read, write: if true;<br>    }<br>  }<br>}</code>
     </div>
   </div>`;
 }
-window.updateFirebaseConfig = async function(){
-  const apiKey=document.getElementById('fb2-apikey').value.trim();
-  const authDomain=document.getElementById('fb2-authdomain').value.trim();
-  const projectId=document.getElementById('fb2-projectid').value.trim();
-  const storageBucket=document.getElementById('fb2-storagebucket').value.trim();
-  const messagingSenderId=document.getElementById('fb2-senderid').value.trim();
-  const appId=document.getElementById('fb2-appid').value.trim();
-  const status=document.getElementById('fb2-status');
-  if(!apiKey||!authDomain||!projectId){status.innerHTML='<span style="color:var(--red)">⚠️ API Key, Auth Domain and Project ID required</span>';return;}
-  status.innerHTML='<span style="color:var(--gold)">⏳ Connecting...</span>';
-  const cfg={apiKey,authDomain,projectId,storageBucket,messagingSenderId,appId};
-  const ok=await initFirebase(cfg);
-  if(ok){
-    await loadDB();
-    localStorage.setItem('dyb_fb_config',JSON.stringify(cfg));
-    status.innerHTML='<span style="color:var(--green)">✅ Connected!</span>';
-    toast('✅ Firebase reconnected!','success');
-  } else {
-    status.innerHTML='<span style="color:var(--red)">❌ Failed — check config and Firestore enabled</span>';
-  }
-};
 window.pushToFirebase = async function(){ await saveDB(); toast('✅ Data pushed to Firebase','success'); };
 window.pullFromFirebase = async function(){ await loadDB(); toast('✅ Data pulled from Firebase','success'); navigate('overview'); };
-window.clearFirebaseConfig = function(){
-  if(!confirm('Clear saved Firebase config? You will need to reconfigure.')) return;
-  localStorage.removeItem('dyb_fb_config'); toast('🗑️ Config cleared — reload page to reconfigure','info');
-};
 
 // ══════════════════════════════════════════════
 // USER PAGES
@@ -1867,7 +1864,7 @@ function renderUserLoans(){
 function renderApplyLoan(){
   const rate=DB.settings.interestRate||12; const tenure=DB.settings.loanTenureMonths||12;
   return `
-  <div class="page-header"><div class="page-title">Apply for Loan 🏦</div><div class="page-subtitle">Interest rate: ${rate}% per annum (set by admin)</div></div>
+  <div class="page-header"><div class="page-title">Apply for Loan 🏦</div><div class="page-subtitle">Interest rate: ${rate}% per annum</div></div>
   <div class="grid-2">
     <div class="data-card">
       <div class="data-card-header"><div class="data-card-title">📝 Application</div></div>
@@ -1876,7 +1873,6 @@ function renderApplyLoan(){
         <div class="form-group"><label>Tenure (Months)</label><input type="number" id="la-tenure" value="${tenure}" min="1" max="120" oninput="calcLoanPreview()"/></div>
         <div class="form-group"><label>Purpose</label><textarea id="la-purpose" placeholder="Describe your loan purpose..." style="background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;width:100%;resize:vertical;min-height:80px;outline:none"></textarea></div>
         <button class="btn-primary" onclick="submitLoanApp()">📤 Submit Application</button>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:10px">Max 3 active loans at once</div>
       </div>
     </div>
     <div class="data-card">
@@ -1987,6 +1983,7 @@ window.saveUserProfile = async function(){
   if(newId){if(DB.users.find(u=>u.id===newId&&u.id!==currentUser.id)){toast('❌ ID taken','error');return;} user.id=newId; toast(`✅ ID changed to ${newId}`,'info');}
   if(newPw){if(!curPw){toast('⚠️ Current password required','warning');return;} if(curPw!==user.password){toast('❌ Wrong current password','error');return;} if(newPw.length<4){toast('⚠️ Min 4 chars','warning');return;} if(newPw===curPw){toast('⚠️ Must be different','warning');return;} user.password=newPw; toast('🔐 Password changed','info');}
   user.name=name; user.phone=phone; currentUser=user;
+  saveSession(user,'user');
   document.getElementById('sidebar-username').textContent=user.name;
   document.getElementById('sidebar-avatar').textContent=user.name[0];
   await saveDB(); toast('✅ Profile updated','success');
